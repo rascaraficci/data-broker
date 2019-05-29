@@ -24,7 +24,7 @@ class KafkaProducer {
     logger.debug("Creating new Kafka producer...", {filename: "producer"});
     const kafkaHost = host ? host : config.kafka.kafkaAddress + ":" + config.kafka.kafkaPort.toString();
     logger.debug("Creating Kafka client...", {filename: "producer"});
-    const client = new kafka.KafkaClient({kafkaHost: kafkaHost});
+    const client = new kafka.KafkaClient({kafkaHost});
     logger.debug("... Kafka client was created.", {filename: "producer"});
     logger.debug("Creating Kafka HighLevenProducer...", {filename: "producer"});
     this.producerDojot = new kafkaDojot.Admin(config.kafka.kafkaAddress, Number(config.kafka.kafkaPort));
