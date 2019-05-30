@@ -5,8 +5,8 @@ import { logger } from "@dojot/dojot-module-logger";
 import kafka = require("kafka-node");
 import util = require("util");
 import { KafkaConsumer } from "./consumer";
-import { KafkaProducer } from "./producer";
 import { KafkaFactory } from "./KafkaFactory";
+import { KafkaProducer } from "./producer";
 import tools = require("./simple-tools");
 
 import { Event } from "./subscription/Event";

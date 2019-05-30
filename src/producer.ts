@@ -1,9 +1,9 @@
 import kafkaDojot = require("@dojot/adminkafka");
 import { logger } from "@dojot/dojot-module-logger";
 import kafka = require("kafka-node");
+import { KafkaFactory } from "./KafkaFactory";
 import { IAutoScheme } from "./RedisClientWrapper";
 import { TopicCallback } from "./topicManager";
-import { KafkaFactory } from "./KafkaFactory";
 
 const TAG = { filename: "admin-producer" };
 
