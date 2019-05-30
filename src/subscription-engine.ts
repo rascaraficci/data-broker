@@ -6,6 +6,7 @@ import kafka = require("kafka-node");
 import util = require("util");
 import { KafkaConsumer } from "./consumer";
 import { KafkaProducer } from "./producer";
+import { KafkaFactory } from "./KafkaFactory";
 import tools = require("./simple-tools");
 
 import { Event } from "./subscription/Event";
@@ -202,7 +203,8 @@ class SubscriptionEngine {
     logger.debug("Initializing subscription engine...", {filename: "sub-eng"});
 
     this.producerReady = false;
-    this.producer = new KafkaProducer(undefined, () => {
+
+    this.producer = new KafkaProducer(new KafkaFactory(), () => {
       this.producerReady = true;
     });
 
