@@ -1,9 +1,9 @@
 import "jest";
 import { KafkaFactory } from "../src/KafkaFactory";
-jest.mock("kafka-node");
-jest.mock("@dojot/adminkafka");
 import kafka = require("kafka-node");
 import kafkaDojot = require("@dojot/adminkafka");
+jest.mock("kafka-node");
+jest.mock("@dojot/adminkafka");
 
 describe("KafkaFactory", () => {
 
@@ -38,7 +38,7 @@ describe("KafkaFactory", () => {
     it("should create a kafka producer", (done) => {
         const factory = new KafkaFactory("host");
         const client = factory.client();
-        const producer = factory.kafkaProducer(client, () => { return });
+        const producer = factory.kafkaProducer(client, () => { return; });
         expect(producer).not.toBeUndefined();
         expect(kafka.HighLevelProducer).toHaveBeenCalledTimes(1);
         expect(producer.on).toHaveBeenCalledTimes(1);

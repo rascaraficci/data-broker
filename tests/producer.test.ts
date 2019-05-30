@@ -9,7 +9,7 @@ describe("Producer", () => {
 
     it("should create a producer", (done) => {
         const kafkaFactory = new KafkaFactory("test");
-        const producer = new KafkaProducer(kafkaFactory, () => { return });
+        const producer = new KafkaProducer(kafkaFactory, () => { return; });
 
         expect(kafkaFactory.client).toHaveBeenCalled();
         expect(kafkaFactory.dojotProducer).toHaveBeenCalled();
