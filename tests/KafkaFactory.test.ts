@@ -1,9 +1,9 @@
 import "jest";
 import { KafkaFactory } from "../src/KafkaFactory";
 import kafkaDojot = require("@dojot/adminkafka");
+jest.mock("@dojot/adminkafka");
 import kafka = require("kafka-node");
 jest.mock("kafka-node");
-jest.mock("@dojot/adminkafka");
 
 describe("KafkaFactory", () => {
 
