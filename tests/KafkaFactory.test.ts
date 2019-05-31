@@ -1,7 +1,8 @@
 import "jest";
-import { KafkaFactory } from "../src/KafkaFactory";
-import kafkaDojot = require("@dojot/adminkafka");
 import kafka = require("kafka-node");
+import kafkaDojot = require("@dojot/adminkafka");
+import { KafkaFactory } from "../src/KafkaFactory";
+
 jest.mock("@dojot/adminkafka");
 jest.mock("kafka-node");
 
@@ -34,7 +35,6 @@ describe("KafkaFactory", () => {
         expect(kafkaDojot.Admin).toHaveBeenCalledTimes(1);
         done();
     });
-    
     it("should create a kafka producer", (done) => {
         const factory = new KafkaFactory("host");
         const client = factory.client();
