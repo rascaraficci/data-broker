@@ -3,6 +3,7 @@
 
 import { logger } from "@dojot/dojot-module-logger";
 import uuid = require("uuid/v4");
+import { KafkaFactory } from "./KafkaFactory";
 import { KafkaProducer } from "./producer";
 import { QueuedTopic } from "./QueuedTopic";
 import { ClientWrapper, IAutoScheme } from "./RedisClientWrapper";
@@ -31,7 +32,7 @@ class TopicManager {
     this.getSet = __dirname + "/lua/setGet.lua";
     this.producerReady = false;
     this.topicQueue = [];
-    this.producer = new KafkaProducer(undefined, () => {
+    this.producer = new KafkaProducer(new KafkaFactory(), () => {
       this.producerReady = true;
       if (this.topicQueue.length) {
         for (const request of this.topicQueue) {

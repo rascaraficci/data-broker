@@ -5,6 +5,7 @@ import { logger } from "@dojot/dojot-module-logger";
 import kafka = require("kafka-node");
 import util = require("util");
 import { KafkaConsumer } from "./consumer";
+import { KafkaFactory } from "./KafkaFactory";
 import { KafkaProducer } from "./producer";
 import tools = require("./simple-tools");
 
@@ -202,7 +203,8 @@ class SubscriptionEngine {
     logger.debug("Initializing subscription engine...", {filename: "sub-eng"});
 
     this.producerReady = false;
-    this.producer = new KafkaProducer(undefined, () => {
+
+    this.producer = new KafkaProducer(new KafkaFactory(), () => {
       this.producerReady = true;
     });
 

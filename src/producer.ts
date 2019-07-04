@@ -1,7 +1,7 @@
 import kafkaDojot = require("@dojot/adminkafka");
 import { logger } from "@dojot/dojot-module-logger";
 import kafka = require("kafka-node");
-import config = require("./config");
+import { KafkaFactory } from "./KafkaFactory";
 import { IAutoScheme } from "./RedisClientWrapper";
 import { TopicCallback } from "./topicManager";
 
@@ -10,7 +10,7 @@ const TAG = { filename: "admin-producer" };
 /**
  * Class for producing data to be sent through Kafka
  */
-class KafkaProducer {
+export class KafkaProducer {
 
   /** The producer object used by Kafka library */
   private producer: kafka.HighLevelProducer;
@@ -20,23 +20,9 @@ class KafkaProducer {
    * @param host The host used to send messages. If not set it will be retrieved from configuration object.
    * @param init Callback executed when the producer indicates that it is ready to use.
    */
-  constructor(host?: string, init?: () => void) {
-    logger.debug("Creating new Kafka producer...", {filename: "producer"});
-    const kafkaHost = host ? host : config.kafka.zookeeper;
-    logger.debug("Creating Kafka client...", {filename: "producer"});
-    const client = new kafka.Client(kafkaHost);
-    logger.debug("... Kafka client was created.", {filename: "producer"});
-    logger.debug("Creating Kafka HighLevenProducer...", {filename: "producer"});
-    this.producerDojot = new kafkaDojot.Admin(config.kafka.kafkaAddress, Number(config.kafka.kafkaPort));
-    this.producer = new kafka.HighLevelProducer(client, { requireAcks: 1 });
-    logger.debug("... HighLevelProducer was created.", {filename: "producer"});
-    this.producer.on("ready", () => {
-      if (init) {
-        init();
-      }
-    });
-
-    logger.debug("... Kafka producer was created.", {filename: "producer"});
+  constructor(kafkaFactory: KafkaFactory, init: () => void) {
+    this.producer = kafkaFactory.kafkaProducer(kafkaFactory.client(), init);
+    this.producerDojot = kafkaFactory.dojotProducer();
   }
 
   /**
@@ -114,5 +100,3 @@ class KafkaProducer {
     logger.debug("... producer was closed.", {filename: "producer"});
   }
 }
-
-export { KafkaProducer };
