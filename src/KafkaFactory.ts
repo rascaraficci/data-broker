@@ -18,8 +18,7 @@ export class KafkaFactory {
     }
 
     public dojotProducer(): kafkaDojot.Admin {
-        logger.debug("... Kafka client was created.", {filename: "producer"});
-        logger.debug("Creating Kafka HighLevenProducer...", {filename: "producer"});
+        logger.debug("Creating Kafka HighLevelProducer...", {filename: "producer"});
         return new kafkaDojot.Admin(config.kafka.kafkaAddress, Number(config.kafka.kafkaPort));
     }
 
