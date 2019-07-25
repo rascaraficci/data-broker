@@ -5,8 +5,6 @@ services:
 cache:
   directories:
   - node_modules
-before_install:
-  - npm install aglio
 script:
   - npm run-script build
   - npm run-script build-tests
