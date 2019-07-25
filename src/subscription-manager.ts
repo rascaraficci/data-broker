@@ -190,6 +190,9 @@ class DataBroker {
 }
 
 function main() {
+  // in case the environment variable is undefined, we set the default value
+  logger.setLevel(process.env.LOG_LEVEL || "info");
+
   const app = express();
   const subscrEngine = new SubscriptionEngine();
   const dataBroker = new DataBroker(app, subscrEngine);
