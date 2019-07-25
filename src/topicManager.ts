@@ -32,6 +32,7 @@ class TopicManager {
     this.getSet = __dirname + "/lua/setGet.lua";
     this.producerReady = false;
     this.topicQueue = [];
+    logger.debug("Creating Kafka Producer...", TAG);
     this.producer = new KafkaProducer(new KafkaFactory(), () => {
       this.producerReady = true;
       if (this.topicQueue.length) {
@@ -40,6 +41,7 @@ class TopicManager {
         }
       }
     });
+    logger.debug("... Kafka Producer created.", TAG);
   }
   public getConfigTopics(subject: string): Promise<any> {
     this.assertTopic(subject, "a valid subject must be provided");
@@ -59,7 +61,7 @@ class TopicManager {
         }
       }
     } catch (error) {
-      logger.debug("Profiles could not be config", TAG);
+      logger.error(`Profiles could not be config. Error: ${error}`, TAG);
     }
   }
 
@@ -81,7 +83,7 @@ class TopicManager {
           callback(err);
         }
 
-        logger.debug("... topic was properly created/retrievied.", TAG);
+        logger.debug("... topic was properly created/retrieved.", TAG);
         const request = { topic, subject, callback };
         if (this.producerReady) {
           logger.debug("Handling all pending requests...", TAG);

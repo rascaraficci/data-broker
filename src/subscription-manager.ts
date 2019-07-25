@@ -52,7 +52,8 @@ class DataBroker {
         this.registerSocketIOEndpoints();
         logger.debug("... socket.io endpoints were successfully registered.", TAG);
       })
-      .catch(() => {
+      .catch((error: any) => {
+        logger.error(`... Kafka messenger initialization failed. Error: ${error}`, TAG);
         process.kill(process.pid, "SIGTERM");
       });
     logger.debug("... Kafka messenger initialization requested.", TAG);
