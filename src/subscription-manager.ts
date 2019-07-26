@@ -1,6 +1,7 @@
 import { Messenger } from "@dojot/dojot-module";
 import { getHTTPRouter as getLoggerRouter, logger } from "@dojot/dojot-module-logger";
 import bodyParser = require("body-parser");
+import config = require("./config");
 import express = require("express");
 import http = require("http");
 import morgan = require("morgan");
@@ -12,7 +13,6 @@ import { RedisManager } from "./redisManager";
 import { SocketIOSingleton } from "./socketIo";
 import { SubscriptionEngine, SubscriptionType } from "./subscription-engine";
 import { TopicManagerBuilder } from "./TopicBuilder";
-import config = require("./config");
 
 const TAG = { filename: "sub-mng" };
 
