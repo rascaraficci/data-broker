@@ -61,9 +61,10 @@ class DataBroker {
     this.registerTopicEndpoints();
     logger.debug("... common endpoints were registered.", TAG);
 
+    let servicePort = process.env.SERVICE_PORT || 80;
     logger.debug("Starting HTTP server...", TAG);
-    httpServer.listen(80, () => {
-      logger.debug("Subscription manager listening on port 80", TAG);
+    httpServer.listen(servicePort, () => {
+      logger.debug(`Subscription manager listening on port ${servicePort}`, TAG);
     });
     logger.debug("... HTTP server startup requested.", TAG);
   }
