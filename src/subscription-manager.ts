@@ -1,12 +1,12 @@
 import { Messenger } from "@dojot/dojot-module";
 import { getHTTPRouter as getLoggerRouter, logger } from "@dojot/dojot-module-logger";
 import bodyParser = require("body-parser");
-import config = require("./config");
 import express = require("express");
 import http = require("http");
 import morgan = require("morgan");
 import util = require("util");
 import { authEnforce, authParse, IAuthRequest } from "./api/authMiddleware";
+import config = require("./config");
 import { AgentHealthChecker } from "./Healthcheck";
 import { ITopicProfile } from "./RedisClientWrapper";
 import { RedisManager } from "./redisManager";
