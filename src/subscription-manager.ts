@@ -12,6 +12,7 @@ import { RedisManager } from "./redisManager";
 import { SocketIOSingleton } from "./socketIo";
 import { SubscriptionEngine, SubscriptionType } from "./subscription-engine";
 import { TopicManagerBuilder } from "./TopicBuilder";
+import config = require("./config");
 
 const TAG = { filename: "sub-mng" };
 
@@ -61,10 +62,9 @@ class DataBroker {
     this.registerTopicEndpoints();
     logger.debug("... common endpoints were registered.", TAG);
 
-    const servicePort = process.env.SERVICE_PORT || 80;
     logger.debug("Starting HTTP server...", TAG);
-    httpServer.listen(servicePort, () => {
-      logger.debug(`Subscription manager listening on port ${servicePort}`, TAG);
+    httpServer.listen(config.service.port, () => {
+      logger.debug(`Subscription manager listening on port ${config.service.port}`, TAG);
     });
     logger.debug("... HTTP server startup requested.", TAG);
   }
