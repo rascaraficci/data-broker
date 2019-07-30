@@ -29,4 +29,8 @@ const healthcheck = {
   },
 };
 
-export { kafka, broker, cache, healthcheck};
+const service = {
+  port: Number(process.env.SERVICE_PORT) || 80,
+};
+
+export { kafka, broker, cache, healthcheck, service };
