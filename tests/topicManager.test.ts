@@ -37,7 +37,12 @@ describe("TopicManager", () => {
   // setConfigTopics() tests //
   it("should set a topic config with non empty body", () => {
     expect(() => {
-      topicManager.setConfigTopics("", sampleConfig);
-    }).toThrow();
+      topicManager.setConfigTopics("test", sampleConfig);
+    }).not.toThrow();
+  });
+
+  // getConfigTopics() tests //
+  it("should get config", () => {
+    expect(topicManager.getConfigTopics("test")).resolves.toBeDefined();
   });
 });
