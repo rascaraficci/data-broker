@@ -76,7 +76,7 @@ class ClientWrapper {
         });
       }
       /**
-       * Scans all keys that math the pattern *:subject on redis, then, it calls getConfigs to get the value
+       * Scans all keys that match the pattern *:subject on redis, then, it calls getConfigs to get the value
        * of these keys, if they exist.
        * @param client redis client
        * @param cursor initial cursor to start scanning in redis

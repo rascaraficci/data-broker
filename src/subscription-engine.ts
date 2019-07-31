@@ -106,7 +106,7 @@ function evaluateMetaCondition(condition: string, data: any) {
 
 function evaluateGeoCondition(georel: string, geometry: string, coords: string, data: any) {
   const ret = true;
-  logger.debug("Evaluation of meta-data is not yet implemented.", {filename: "sub-eng"});
+  logger.debug("Evaluation of geo-data is not yet implemented.", {filename: "sub-eng"});
   logger.debug("Parameters are:", {filename: "sub-eng"});
   logger.debug(`georel: ${georel}`, {filename: "sub-eng"});
   logger.debug(`geometry: ${geometry}`, {filename: "sub-eng"});

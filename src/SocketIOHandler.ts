@@ -58,7 +58,9 @@ class SocketIOHandler {
                         logger.error("Disconnecting socket.", TAG);
                         socket.disconnect();
                     } else {
+                        logger.debug("Creating new socket...", TAG);
                         this.processNewSocketIo(socket, tenant);
+                        logger.debug("... new socket created.", TAG);
                     }
                 },
             );
@@ -98,7 +100,7 @@ class SocketIOHandler {
             this.fManager.update(JSON.parse(filter), socket.id);
         });
         socket.on("disconnect", () => {
-            logger.debug("Socker disconnected. Will unregister callback", {filename: "SocketIOHandler "});
+            logger.debug("Socket disconnected. Will unregister callback", {filename: "SocketIOHandler "});
             this.messenger.unregisterCallback("dojot.notifications", "message", socket.id);
         });
     }
