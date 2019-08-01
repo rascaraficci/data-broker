@@ -5,7 +5,7 @@ import "jest";
 import { TopicManagerBuilder } from "../src/TopicBuilder";
 
 describe("TopicBuilder", () => {
-  let topicBuilder = TopicManagerBuilder;
+  const topicBuilder = TopicManagerBuilder;
 
   it("should build a new service - valid name", () => {
     expect(topicBuilder.get("testService1")).toBeDefined();
