@@ -29,6 +29,8 @@ class TopicManager {
 
     this.service = service;
     this.redis = RedisManager.getClient();
+    // console.log("ESTOU EM constructor");
+    // console.log(`redis: ${JSON.stringify(this.redis)}`);
     this.getSet = __dirname + "/lua/setGet.lua";
     this.producerReady = false;
     this.topicQueue = [];
@@ -66,6 +68,8 @@ class TopicManager {
   }
 
   public editConfigTopics(subject: string, tenant: string, body: any) {
+    this.assertTopic(subject, "a valid subject must be provided");
+    this.assertTopic(tenant, "a valid tenant must be provided");
     const key: string = tenant + ":" + subject;
     this.redis.setConfig(key, JSON.stringify(body[tenant]));
   }
