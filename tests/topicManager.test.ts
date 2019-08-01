@@ -2,7 +2,9 @@
 "use strict";
 
 import "jest";
+import util from "util";
 import { TopicManager } from "../src/topicManager";
+import { ClientWrapper } from "../src/RedisClientWrapper";
 
 const sampleConfig: object = {
   "special-user": {
@@ -13,6 +15,17 @@ const sampleConfig: object = {
   },
 };
 
+jest.mock("../src/RedisClientWrapper", () => ({
+  ClientWrapper: jest.fn(() => {
+    return {
+      getConfig: jest.fn(() => new Promise((resolve, reject) => {
+        resolve(sampleConfig);
+      })),
+      setConfig: jest.fn(),
+    };
+  }),
+}));
+
 describe("TopicManager", () => {
   let topicManager: TopicManager;
 
@@ -20,29 +33,67 @@ describe("TopicManager", () => {
     topicManager = new TopicManager("test");
   });
 
-  // constructor() tests //
-  it("should create a TopicManager", () => {
-    expect(topicManager).toBeDefined();
+  afterEach(() => {
+    topicManager.destroy();
   });
 
-  it("should not create a TopicManager", () => {
-    expect(() => new TopicManager("")).toThrow();
+  describe("constructor", () => {
+    it("should create a TopicManager - valid service", () => {
+      expect(topicManager).toBeDefined();
+    });
+
+    it("should not create a TopicManager - invalid service", () => {
+      expect(() => new TopicManager("")).toThrow();
+    });
   });
 
-  // getCreateTopic() tests //
-  it("should create a topic", () => {
-    expect(() => topicManager.getCreateTopic("test", undefined)).toBeDefined();
+  describe("getConfigTopics", () => {
+    it("should get config - valid subject", () => {
+      expect.assertions(1);
+
+      topicManager.getConfigTopics("test").then((data) => {
+        expect(data).toBeDefined();
+      });
+    });
+
+    it("should not get config - invalid subject", () => {
+      expect(() => topicManager.getConfigTopics("")).toThrow();
+    });
   });
 
-  // setConfigTopics() tests //
-  it("should set a topic config with non empty body", () => {
-    expect(() => {
-      topicManager.setConfigTopics("test", sampleConfig);
-    }).not.toThrow();
+  describe("setConfigTopics", () => {
+    it("should set a topic config - valid subject", () => {
+      expect(() => topicManager.setConfigTopics("test", sampleConfig)).not.toThrow();
+    });
+
+    it("should not set a topic config - invalid subject", () => {
+      expect(() => topicManager.setConfigTopics("", sampleConfig)).toThrow();
+    });
   });
 
-  // getConfigTopics() tests //
-  it("should get config", () => {
-    expect(topicManager.getConfigTopics("test")).resolves.toBeDefined();
+  describe("editConfigTopics", () => {
+    it("should edit a topic config", () => {
+      expect(() => topicManager.editConfigTopics("test", "special-user", sampleConfig)).not.toThrow();
+    });
+
+    it("should not edit a topic config - invalid subject", () => {
+      expect(() => topicManager.editConfigTopics("", "special-user", sampleConfig)).toThrow();
+    });
+
+    it("should not edit a topic config - invalid tenant", () => {
+      expect(() => topicManager.editConfigTopics("test", "", sampleConfig)).toThrow();
+    });
+  });
+
+  describe("getCreateTopic", () => {
+    it("should create a topic - with callback", () => {
+      expect(() => topicManager.getCreateTopic("test", () => {
+        // do nothing
+      })).toBeDefined();
+    });
+
+    it("should create a topic - without callback", () => {
+      expect(() => topicManager.getCreateTopic("test", undefined)).toBeDefined();
+    });
   });
 });
