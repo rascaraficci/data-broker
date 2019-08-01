@@ -2,9 +2,7 @@
 "use strict";
 
 import "jest";
-import util from "util";
 import { TopicManager } from "../src/topicManager";
-import { ClientWrapper } from "../src/RedisClientWrapper";
 
 const sampleConfig: object = {
   "special-user": {
