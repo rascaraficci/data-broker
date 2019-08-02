@@ -81,13 +81,26 @@ describe("SubscriptionEngine class", () => {
     subscriptionEngine = new SubscriptionEngine();
   });
 
+  describe("constructor", () => {
+    it("should build a SubscriptionEngine", () => {
+      const engine = new SubscriptionEngine()
+      expect(engine).toBeDefined();
+
+      const strippedObj = (engine as any);
+      expect(strippedObj.producer).toBeDefined();
+      expect(strippedObj.producerReady).toBeTruthy();
+      expect(strippedObj.subscriber).toBeDefined();
+      expect(strippedObj.registeredSubscriptions).toBeDefined();
+    });
+  });
+
   describe("handleEvent", () => {
     let message: kafka.Message;
     let parseSpy: jest.SpyInstance;
 
     beforeAll(() => {
-      parseSpy = jest.spyOn(JSON, "parse");
       message = { topic: "testTopic", value: "{ \"data\": \"testValue\" }" };
+      parseSpy = jest.spyOn(JSON, "parse");
     });
 
     beforeEach(() => {
