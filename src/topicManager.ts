@@ -29,8 +29,6 @@ class TopicManager {
 
     this.service = service;
     this.redis = RedisManager.getClient();
-    // console.log("ESTOU EM constructor");
-    // console.log(`redis: ${JSON.stringify(this.redis)}`);
     this.getSet = __dirname + "/lua/setGet.lua";
     this.producerReady = false;
     this.topicQueue = [];
