@@ -58,19 +58,21 @@ describe("FilterManager", () => {
 
     beforeEach(() => {
       fm.update(filter, socketId);
+      msg = {
+        message: "testMessage",
+        metaAttrsFilter: {},
+        msgId: "testMsgId",
+        subject: "2",
+        timestamp: 1,
+      };
     });
 
     it("should check the filter - check returns true with msg subject === 2", () => {
       // 2 > 1 should be true
-      msg = {
-        message: "testMessage",
-        metaAttrsFilter: {
-          priority: "testPriority",
-          shouldPersist: true,
-        },
-        msgId: "testMsgId",
-        subject: "2",
-        timestamp: 1,
+      msg.subject = "2";
+      msg.metaAttrsFilter = {
+        priority: "testPriority",
+        shouldPersist: true,
       };
 
       expect(fm.checkFilter(JSON.stringify(msg), socketId)).toBeTruthy();
@@ -78,30 +80,20 @@ describe("FilterManager", () => {
 
     it("should check the filter - check returns false with msg subject === 0", () => {
       // 0 > 1 should be false
-      msg = {
-        message: "testMessage",
-        metaAttrsFilter: {
-          priority: "testPriority",
-          shouldPersist: true,
-        },
-        msgId: "testMsgId",
-        subject: "0",
-        timestamp: 1,
+      msg.subject = "0";
+      msg.metaAttrsFilter = {
+        priority: "testPriority",
+        shouldPersist: true,
       };
 
       expect(fm.checkFilter(JSON.stringify(msg), socketId)).toBeFalsy();
     });
 
     it("should check the filter - check returns false with metaAttrsFilter being used", () => {
-      msg = {
-        message: "testMessage",
-        metaAttrsFilter: {
-          shouldPersist: true,
-          testValue: "1",
-        },
-        msgId: "testMsgId",
-        subject: "2",
-        timestamp: 1,
+      msg.subject = "2";
+      msg.metaAttrsFilter = {
+        shouldPersist: true,
+        testValue: "1",
       };
 
       // Adding testValue to the filter fields
@@ -111,15 +103,10 @@ describe("FilterManager", () => {
     });
 
     it("should check the filter - check returns true with metaAttrsFilter being used", () => {
-      msg = {
-        message: "testMessage",
-        metaAttrsFilter: {
-          shouldPersist: true,
-          testValue: "2",
-        },
-        msgId: "testMsgId",
-        subject: "2",
-        timestamp: 1,
+      msg.subject = "2";
+      msg.metaAttrsFilter = {
+        shouldPersist: true,
+        testValue: "2",
       };
 
       // Adding testValue to the filter fields
@@ -129,15 +116,10 @@ describe("FilterManager", () => {
     });
 
     it("should check the filter - check returns true with metaAttrsFilter without testValue", () => {
-      msg = {
-        message: "testMessage",
-        metaAttrsFilter: {
-          shouldPersist: true,
-          sub: "2",
-        },
-        msgId: "testMsgId",
-        subject: "2",
-        timestamp: 1,
+      msg.subject = "2";
+      msg.metaAttrsFilter = {
+        shouldPersist: true,
+        sub: "2",
       };
 
       // Adding testValue to the filter fields
@@ -147,14 +129,6 @@ describe("FilterManager", () => {
     });
 
     it("should check the filter - check returns true with metaAttrsFilter being used", () => {
-      msg = {
-        message: "testMessage",
-        metaAttrsFilter: { },
-        msgId: "testMsgId",
-        subject: "2",
-        timestamp: 1,
-      };
-
       expect(fm.checkFilter(JSON.stringify(msg), "otherSocketId")).toBeTruthy();
     });
   });

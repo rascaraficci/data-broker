@@ -11,6 +11,7 @@ jest.mock("kafka-node", () => ({
     return { key, value };
   }),
 }));
+
 jest.mock("@dojot/adminkafka", () => ({
   Admin: jest.fn(() => {
     return {
@@ -18,6 +19,7 @@ jest.mock("@dojot/adminkafka", () => ({
     };
   }),
 }));
+
 jest.mock("../src/KafkaFactory", () => ({
   KafkaFactory: jest.fn(() => ({
     client: jest.fn(),
@@ -32,6 +34,7 @@ jest.mock("../src/KafkaFactory", () => ({
     })),
   })),
 }));
+
 jest.mock("../src/RedisClientWrapper");
 
 describe("Producer", () => {

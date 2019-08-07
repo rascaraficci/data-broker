@@ -51,5 +51,5 @@ describe("SocketIOSingleton", () => {
       const server = SocketIOSingleton.getInstance(serverName, messenger);
       expect(server).toBeDefined();
     });
-  })
+  });
 });

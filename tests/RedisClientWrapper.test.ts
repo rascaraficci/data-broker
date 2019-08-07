@@ -15,6 +15,7 @@ class RedisClientStub {
     this.scan = jest.fn();
     this.script = jest.fn((arg1: any, arg2: any, cb?: any) => {
       if (cb) {
+        // to test the callback code
         cb();
       }
     });
@@ -29,6 +30,7 @@ jest.mock("fs", () => ({
 
 describe("RedisClientWrapper", () => {
   const redisStub = new RedisClientStub();
+
   let clientWrapper: ClientWrapper;
 
   beforeEach(() => {
