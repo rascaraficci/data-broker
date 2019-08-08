@@ -72,30 +72,30 @@ class TopicManager {
     this.redis.setConfig(key, JSON.stringify(body[tenant]));
   }
 
-  public getCreateTopic(subject: string, callback: TopicCallback | undefined): void {
+  public getCreateTopic(subject: string, callback: TopicCallback): void {
     logger.debug("Retrieving/creating new topic...", TAG);
     logger.debug(`Subject: ${subject}`, TAG);
     try {
       const key: string = this.parseKey(subject);
       const tid: string = uuid();
       this.redis.runScript(this.getSet, [key], [tid], (err: any, topic: string) => {
-        if (err && callback) {
+        if (err) {
           logger.debug("... topic could not be created/retrieved.", TAG);
           logger.error(`Error while calling REDIS: ${err}`, TAG);
           callback(err);
-        }
-
-        logger.debug("... topic was properly created/retrieved.", TAG);
-        const request = { topic, subject, callback };
-        if (this.producerReady) {
-          logger.debug("Handling all pending requests...", TAG);
-          this.handleRequest(request);
-          logger.debug("... all pending requests were handled.", TAG);
         } else {
-          logger.debug("Producer is not yet ready.", TAG);
-          logger.debug("Adding to the pending requests queue...", TAG);
-          this.topicQueue.push(request);
-          logger.debug("... topic was added to queue.", TAG);
+          logger.debug("... topic was properly created/retrieved.", TAG);
+          const request = { topic, subject, callback };
+          if (this.producerReady) {
+            logger.debug("Handling all pending requests...", TAG);
+            this.handleRequest(request);
+            logger.debug("... all pending requests were handled.", TAG);
+          } else {
+            logger.debug("Producer is not yet ready.", TAG);
+            logger.debug("Adding to the pending requests queue...", TAG);
+            this.topicQueue.push(request);
+            logger.debug("... topic was added to queue.", TAG);
+          }
         }
       });
     } catch (error) {
