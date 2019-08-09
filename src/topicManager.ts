@@ -101,9 +101,7 @@ class TopicManager {
     } catch (error) {
       logger.debug("... topic could not be created/retrieved.", TAG);
       logger.error(`An exception was thrown: ${error}`, TAG);
-      if (callback) {
-        callback(error);
-      }
+      callback(error);
     }
   }
 
