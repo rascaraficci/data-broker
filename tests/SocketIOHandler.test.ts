@@ -4,7 +4,6 @@ import { Messenger } from "@dojot/dojot-module";
 import "jest";
 import { Callback } from "redis";
 import { SocketIOHandler } from "../src/SocketIOHandler";
-import SocketIO from "socket.io";
 
 /**
  * Variables

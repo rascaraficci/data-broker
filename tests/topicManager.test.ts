@@ -155,7 +155,7 @@ describe("TopicManager", () => {
       callbackError = undefined;
       callbackData = "testData";
 
-      const stripped = (topicManager as any);
+      stripped = (topicManager as any);
       stripped.producerReady = false;
       const beforeLength = stripped.topicQueue.length;
       expect(() => stripped.getCreateTopic(testSubject, testCallback)).not.toThrow();
