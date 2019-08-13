@@ -4,26 +4,34 @@ import "jest";
 import { RedisClient } from "redis";
 import { AgentHealthChecker } from "../src/Healthcheck";
 
+/**
+ * Variables
+ */
+const mockConfig = {
+  HealthCheck: {
+    registerMonitor: jest.fn(),
+  },
+  RedisClient: {
+    on: jest.fn(),
+  },
+  Router: jest.fn(),
+};
+
+/**
+ * Mocks
+ */
 jest.mock("@dojot/dojot-module", () => ({
   Messenger: jest.fn(),
 }));
 
 jest.mock("redis", () => ({
-  RedisClient: jest.fn(() => {
-    return {
-      on: jest.fn(),
-    };
-  }),
+  RedisClient: jest.fn(() => mockConfig.RedisClient),
 }));
 
 jest.mock("@dojot/healthcheck", () => ({
-  HealthChecker: jest.fn(() => ({
-    registerMonitor: jest.fn(),
-  })),
+  HealthChecker: jest.fn(() => mockConfig.HealthCheck),
   Router: jest.fn(),
-  getHTTPRouter: jest.fn(() => {
-    return {};
-  }),
+  getHTTPRouter: jest.fn(() => ({})),
 }));
 
 describe("AgentHealthCheck", () => {
@@ -41,19 +49,17 @@ describe("AgentHealthCheck", () => {
 
   it("should build an AgentHealthCheck", () => {
     expect(hc).toBeDefined();
-
     expect(hc.router).toBeDefined();
 
     expect(stripped.healthChecker).toBeDefined();
-
     expect(stripped.kafkaMessenger).toBeDefined();
     expect(stripped.kafkaMessenger).toBe(messenger);
-
     expect(stripped.redisClient).toBeDefined();
     expect(stripped.redisClient).toBe(redisClient);
   });
 
   it("should register monitors", () => {
     hc.init();
+    expect(mockConfig.HealthCheck.registerMonitor).toHaveBeenCalledTimes(5);
   });
 });
