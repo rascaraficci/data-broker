@@ -1,6 +1,4 @@
-import kafkaDojot = require("@dojot/adminkafka");
 import "jest";
-import kafka = require("kafka-node");
 import { KafkaFactory } from "../src/KafkaFactory";
 import { KafkaProducer } from "../src/producer";
 import { IAutoScheme } from "../src/RedisClientWrapper";
