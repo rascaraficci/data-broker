@@ -33,4 +33,8 @@ const service = {
   port: Number(process.env.SERVICE_PORT) || 80,
 };
 
-export { kafka, broker, cache, healthcheck, service };
+const logging = {
+  level: process.env.LOG_LEVEL || "info",
+};
+
+export { kafka, broker, cache, logging, healthcheck, service };
