@@ -8,7 +8,6 @@ const kafka = {
   },
   kafkaAddress: process.env.DATABROKER_KAFKA_ADDRESS || "kafka",
   kafkaPort: process.env.DATABROKER_KAFKA_PORT || 9092,
-  zookeeper: process.env.DATABROKER_ZOOKEEPER_HOST || "zookeeper:2181",
 };
 
 const broker = {
@@ -24,7 +23,6 @@ const healthcheck = {
     cpu: Number(process.env.HC_CPU_USAGE_TIMEOUT) || 300000,
     kafka: Number(process.env.HC_KAFKA_TIMEOUT) || 30000,
     memory: Number(process.env.HC_MEMORY_USAGE_TIMEOUT) || 300000,
-    mongodb: Number(process.env.HC_MONGODB_TIMEOUT) || 30000,
     uptime: Number(process.env.HC_UPTIME_TIMEOUT) || 300000,
   },
 };
