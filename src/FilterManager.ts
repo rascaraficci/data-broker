@@ -1,7 +1,7 @@
 "use strict";
 import { logger } from "@dojot/dojot-module-logger";
 
-const TAG = { fileName: "FilterManager" };
+const TAG = { filename: "FilterManager" };
 
 export interface INotification {
   msgId: any;
@@ -23,19 +23,19 @@ class FilterManager {
     this.operationsMap = {
       "!=": (arg1: any, arg2: any) => {
         logger.debug("!= operation", TAG);
-        return arg1 !== arg2 ? 1 : 0;
+        return arg1 !== arg2 ? true : false;
       },
       "<": (arg1: number, arg2: number) => {
         logger.debug("< operation", TAG);
-        return arg1 < arg2 ? 1 : 0;
+        return arg1 < arg2 ? true : false;
       },
       "=": (arg1: any, arg2: any) => {
         logger.debug("= operation", TAG);
-        return arg1 === arg2 ? 1 : 0;
+        return arg1 === arg2 ? true : false;
       },
       ">": (arg1: number, arg2: number) => {
         logger.debug("> operation", TAG);
-        return arg1 > arg2 ? 1 : 0;
+        return arg1 > arg2 ? true : false;
       },
     };
 
@@ -77,7 +77,7 @@ class FilterManager {
       for (const key in this.filters[socketId].fields) {
         if (this.filters[socketId].fields.hasOwnProperty(key)) {
           if (key === "subject") {
-            if (msg.hasOwnProperty("subject")) {
+            if (notification.hasOwnProperty("subject")) {
               retOperation = this.applyOperation(this.filters[socketId].fields.subject.operation,
                 notification.subject, this.filters[socketId].fields.subject.value);
               logger.debug(`Return from operation over field subject is ${retOperation}`, TAG);
@@ -98,7 +98,7 @@ class FilterManager {
         }
       }
     }
-    return 1;
+    return true;
   }
 
 }

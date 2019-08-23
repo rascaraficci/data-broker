@@ -6,6 +6,7 @@ import http = require("http");
 import morgan = require("morgan");
 import util = require("util");
 import { authEnforce, authParse, IAuthRequest } from "./api/authMiddleware";
+import config = require("./config");
 import { AgentHealthChecker } from "./Healthcheck";
 import { ITopicProfile } from "./RedisClientWrapper";
 import { RedisManager } from "./redisManager";
@@ -64,8 +65,8 @@ class DataBroker {
     logger.debug("... common endpoints were registered.", TAG);
 
     logger.debug("Starting HTTP server...", TAG);
-    httpServer.listen(80, () => {
-      logger.debug("Subscription manager listening on port 80", TAG);
+    httpServer.listen(config.service.port, () => {
+      logger.debug(`Subscription manager listening on port ${config.service.port}`, TAG);
     });
     logger.debug("... HTTP server startup requested.", TAG);
   }

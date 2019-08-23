@@ -12,7 +12,7 @@ services:
     restart: always
 
   data-broker-redis:
-    image: "redis:alpine"
+    image: "redis:5.0.5-alpine3.10"
     restart: always
     networks:
       default:
