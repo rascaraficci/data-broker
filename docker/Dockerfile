@@ -1,4 +1,4 @@
-FROM node:8.14.0-alpine as basis
+FROM node:10.16.3-alpine as basis
 
 WORKDIR /opt/data-broker
 
@@ -12,10 +12,10 @@ COPY . .
 RUN npm run-script build
 
 
-FROM node:8.14.0-alpine
+FROM node:10.16.3-alpine
 RUN apk add --no-cache tini
 ENTRYPOINT ["/sbin/tini", "--"]
-COPY --from=basis  /opt/data-broker /opt/data-broker
+COPY --from=basis /opt/data-broker /opt/data-broker
 WORKDIR /opt/data-broker
 EXPOSE 80
 CMD ["npm", "run", "subscription"]

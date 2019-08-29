@@ -11,11 +11,7 @@ import { UnauthorizedError } from "./UnauthorizedError";
  * @param data The data to be decoded.
  */
 function b64decode(data: string): string {
-  if (typeof Buffer.from === "function") {
-    return Buffer.from(data, "base64").toString();
-  } else {
-    return (new Buffer(data, "base64")).toString();
-  }
+  return Buffer.from(data, "base64").toString();
 }
 
 /**

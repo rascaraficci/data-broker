@@ -11,7 +11,7 @@ function initExpressApp() {
     const rawToken = req.header("authorization");
     if (rawToken !== undefined) {
       const token = rawToken.split(".");
-      const tokenData = JSON.parse(new Buffer(token[1], "base64").toString());
+      const tokenData = JSON.parse(Buffer.from(token[1], "base64").toString());
       (req as any).service = tokenData.service;
     }
     next();

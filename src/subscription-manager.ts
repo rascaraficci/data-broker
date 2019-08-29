@@ -209,7 +209,11 @@ function main() {
 }
 
 process.on("unhandledRejection", (reason) => {
-  logger.error(`Unhandled Rejection at: ${reason.stack || reason}. Bailing out!!`, TAG);
+  if (reason) {
+    logger.error(`Unhandled Rejection at: ${util.inspect(reason)}. Bailing out!!`, TAG);
+  } else {
+    logger.error("Unhandled Rejection detected. Bailing out!!", TAG);
+  }
   process.kill(process.pid, "SIGTERM");
 });
 
