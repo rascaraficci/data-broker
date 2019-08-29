@@ -203,7 +203,7 @@ function main() {
 
 process.on("unhandledRejection", (reason) => {
   if (reason) {
-    logger.error(`Unhandled Rejection at: ${reason}. Bailing out!!`, TAG);
+    logger.error(`Unhandled Rejection at: ${util.inspect(reason)}. Bailing out!!`, TAG);
   } else {
     logger.error("Unhandled Rejection detected. Bailing out!!", TAG);
   }
