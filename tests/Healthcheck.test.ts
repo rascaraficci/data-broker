@@ -90,6 +90,10 @@ describe("AgentHealthCheck", () => {
     stripped = (hc as any);
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   it("should build an AgentHealthCheck", () => {
     expect(hc).toBeDefined();
     expect(hc.router).toBeDefined();
