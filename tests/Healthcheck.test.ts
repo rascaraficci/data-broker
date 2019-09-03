@@ -243,5 +243,84 @@ describe("AgentHealthCheck", () => {
         expect(spyTrigger.mock.calls[0]).toEqual([false, "fail"]);
       });
     });
+
+    /**
+     * Kafka Monitor
+     */
+    describe("Kafka", () => {
+      let spyPromise: jest.SpyInstance;
+
+      beforeEach(() => {
+        spyPromise = jest.spyOn(stripped, "_getKafkaStatus");
+      });
+
+      afterAll(() => {
+        spyPromise.mockRestore();
+      });
+
+      it("should get Kafka status", () => {
+        mockConfig.Messenger.consumer.consumer.getMetadata.mockImplementation((metadataOptions: any, cb?: (err: any, data: any) => any) => {
+          if (cb) cb(undefined, "testMetadata");
+        });
+
+        const status = stripped._getKafkaStatus();
+
+        expect(stripped._getKafkaStatus).toHaveBeenCalled();
+        expect(status).resolves.toEqual({ connected: true, details: { metadata: "testMetadata" } });
+      });
+
+      it("should not get Kafka status", () => {
+        mockConfig.Messenger.consumer.consumer.getMetadata.mockImplementation((metadataOptions: any, cb?: (err: any, data: any) => any) => {
+          if (cb) cb("testError", undefined);
+        });
+
+        const status = stripped._getKafkaStatus();
+
+        expect(stripped._getKafkaStatus).toHaveBeenCalled();
+        expect(status).rejects.toEqual("testError");
+      });
+
+      it("should trigger pass - Kafka is connected", async () => {
+        spyPromise.mockImplementationOnce(() => {
+          return new Promise((resolve, reject) => {
+            resolve({ connected: true })
+          });
+        });
+
+        stripped._registerKafkaMonitor();
+        await spyPromise;
+
+        expect(spyTrigger.mock.calls[0]).toEqual([1, "pass"]);
+      });
+
+      it("should trigger fail - Kafka is not connected", async () => {
+        spyPromise.mockImplementationOnce(() => {
+          return new Promise((resolve, reject) => {
+            resolve({ connected: false })
+          });
+        });
+
+        stripped._registerKafkaMonitor();
+        await spyPromise;
+
+        expect(spyTrigger.mock.calls[0]).toEqual([0, "fail"]);
+      });
+
+      it("should trigger fail - promise was rejected", () => {
+        spyPromise.mockImplementationOnce(() => {
+          return new Promise((resolve, reject) => {
+            reject("testError");
+          });
+        });
+
+        try {
+          stripped._registerKafkaMonitor();
+        }
+        catch {
+          expect(spyTrigger).toHaveBeenCalled();
+          expect(spyTrigger).toHaveBeenCalledWith([0, "fail", "testError"]);
+        }
+      });
+    });
   });
 });
