@@ -145,5 +145,24 @@ describe("authMiddleware", () => {
 
       expect(mockConfig.express.next).toHaveBeenCalled();
     });
+
+    /**
+     * Failure tests
+     */
+    it("should not authorize - no user", () => {
+      authEnforce(req, res, mockConfig.express.next);
+
+      expect(spyStatus).toHaveBeenCalledWith(401);
+      expect(spySend).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    });
+
+    it("should not authorize - no service", () => {
+      req.user = "admin";
+
+      authEnforce(req, res, mockConfig.express.next);
+
+      expect(spyStatus).toHaveBeenCalledWith(401);
+      expect(spySend).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    });
   });
 });
