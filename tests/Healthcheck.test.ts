@@ -115,5 +115,17 @@ describe("AgentHealthCheck", () => {
       hc.init();
       expect(mockConfig.HealthChecker.registerMonitor).toHaveBeenCalledTimes(5);
     });
+
+    /**
+     * Uptime monitor
+     */
+    describe("Uptime", () => {
+      it("should correctly collect uptime", () => {
+        stripped._registerUptimeMonitor();
+
+        expect(mockConfig.process.uptime).toHaveBeenCalled();
+        expect(spyTrigger.mock.calls[0]).toEqual([expect.any(Number), "pass"]);
+      });
+    })
   });
 });
