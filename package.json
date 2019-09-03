@@ -30,6 +30,7 @@
     "@dojot/adminkafka": "0.0.1-alpha.9",
     "@dojot/dojot-module": "0.0.1-beta.4",
     "@dojot/dojot-module-logger": "0.0.1-alpha.4",
+    "@dojot/healthcheck": "^0.0.1-alpha",
     "@types/async": "^2.4.1",
     "@types/body-parser": "^1.16.5",
     "@types/express": "^4.0.37",

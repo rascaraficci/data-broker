@@ -3,7 +3,6 @@ services:
 
   data-broker:
     image: dredd-tests
-    restart: always
     depends_on:
       - kafka
       - data-broker-redis

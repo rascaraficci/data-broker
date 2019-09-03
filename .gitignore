@@ -4,3 +4,4 @@ build
 docs/output.html
 .nyc_output
 coverage
+.idea/
