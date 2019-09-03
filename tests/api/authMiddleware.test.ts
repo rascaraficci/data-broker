@@ -80,4 +80,25 @@ describe("authMiddleware", () => {
     spyStatus = jest.spyOn(express.response, "status");
     spySend = jest.spyOn(express.response, "send");
   });
+
+  /**
+   * Function authParse tests
+   */
+  describe("authParse", () => {
+    /**
+     * Success tests
+     */
+    it("should parse", () => {
+      spyHeader.mockReturnValueOnce(jwt);
+
+      authParse(req, res, mockConfig.express.next);
+
+      expect(req.user).toEqual("admin");
+      expect(req.userid).toEqual(1);
+      expect(req.service).toEqual("admin");
+
+      expect(spyHeader).toHaveBeenCalled();
+      expect(mockConfig.express.next).toHaveBeenCalled();
+    });
+  });
 });
