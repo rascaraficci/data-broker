@@ -23,14 +23,13 @@ const mockTrigger = new DataTrigger(mockServiceInfoDynamic, {});
 
 // To test the registerMonitor callback, we call it directly in the mocked registerMonitor function
 const mockRegisterMonitor = jest.fn((monitor: IComponentDetails, collectFn?: Collector, periodicity?: number) => {
-  if (collectFn) return collectFn(mockTrigger);
+  if (collectFn) {
+    return collectFn(mockTrigger);
+  }
 });
 
 /* Mocked/Spied functions */
 const mockConfig = {
-  process: {
-    uptime: jest.spyOn(process, "uptime").mockReturnValue(42),
-  },
   HealthChecker: {
     registerMonitor: mockRegisterMonitor,
   },
@@ -45,6 +44,9 @@ const mockConfig = {
     on: jest.fn(),
   },
   Router: jest.fn(),
+  process: {
+    uptime: jest.spyOn(process, "uptime").mockReturnValue(42),
+  },
 };
 
 /**
@@ -55,12 +57,12 @@ jest.mock("@dojot/dojot-module", () => ({
 }));
 
 jest.mock("@dojot/healthcheck", () => ({
-  getHTTPRouter: jest.fn(() => ({})),
   DataTrigger: jest.fn(() => ({
     trigger: jest.fn(),
   })),
   HealthChecker: jest.fn(() => mockConfig.HealthChecker),
   Router: jest.fn(),
+  getHTTPRouter: jest.fn(() => ({})),
 }));
 
 jest.mock("os", () => ({
