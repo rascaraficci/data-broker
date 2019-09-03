@@ -129,4 +129,21 @@ describe("authMiddleware", () => {
       expect(req.service).toBeUndefined();
     });
   });
+
+  /**
+   * Function authEnforce tests
+   */
+  describe("authEnforce", () => {
+    /**
+     * Success tests
+     */
+    it("should authorize", () => {
+      spyHeader.mockReturnValueOnce(jwt);
+
+      authParse(req, res, mockConfig.express.next);
+      authEnforce(req, res, mockConfig.express.next);
+
+      expect(mockConfig.express.next).toHaveBeenCalled();
+    });
+  });
 });
