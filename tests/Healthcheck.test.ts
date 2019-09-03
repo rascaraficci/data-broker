@@ -160,5 +160,50 @@ describe("AgentHealthCheck", () => {
         expect(spyTrigger.mock.calls[0]).toEqual([expect.any(Number), "pass"]);
       });
     });
+
+    /**
+     * CPU Monitor
+     */
+    describe("CPU", () => {
+      // The values do not matter at all, but the structure does
+      const cpuInfo: os.CpuInfo = {
+        model: "testModel",
+        speed: 1,
+        times: {
+          user: 1,
+          nice: 1,
+          sys: 1,
+          idle: 1,
+          irq: 1,
+        },
+      };
+      let spyCpus: jest.SpyInstance;
+      let spyLoadavg: jest.SpyInstance;
+
+      beforeAll(() => {
+        spyCpus = jest.spyOn(os, "cpus");
+        spyLoadavg = jest.spyOn(os, "loadavg");
+      });
+
+      it("should trigger pass - CPU usage is normal", () => {
+        spyCpus.mockReturnValue([cpuInfo, cpuInfo]);
+
+        stripped._registerCpuMonitor();
+
+        expect(spyCpus).toHaveBeenCalled();
+        expect(spyLoadavg).toHaveBeenCalled();
+        expect(spyTrigger.mock.calls[0]).toEqual([expect.any(Number), "pass"]);
+      });
+
+      it("should trigger warn - CPU usage is high", () => {
+        spyCpus.mockReturnValue([cpuInfo]);
+
+        stripped._registerCpuMonitor();
+
+        expect(spyCpus).toHaveBeenCalled();
+        expect(spyLoadavg).toHaveBeenCalled();
+        expect(spyTrigger.mock.calls[0]).toEqual([expect.any(Number), "warn"]);
+      });
+    });
   });
 });
