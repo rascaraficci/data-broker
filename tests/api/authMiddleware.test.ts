@@ -46,3 +46,38 @@ const mockConfig = {
 jest.doMock("express", () => ({
   express: mockConfig.express,
 }));
+
+/**
+ * authMiddleware functions tests
+ */
+describe("authMiddleware", () => {
+  let req: IAuthRequest;
+  let res: express.Response;
+  let spyHeader: jest.SpyInstance;
+  let spyStatus: jest.SpyInstance;
+  let spySend: jest.SpyInstance;
+
+  beforeEach(() => {
+    res = express.response;
+    req = express.request;
+    // To isolate tests from one another, we need to remove these parameters,
+    // since they can be persisted between tests
+    if (req.hasOwnProperty("user")) {
+      delete req.user;
+    }
+    if (req.hasOwnProperty("userid")) {
+      delete req.userid;
+    }
+    if (req.hasOwnProperty("service")) {
+      delete req.service;
+    }
+
+    jest.resetAllMocks();
+  });
+
+  beforeAll(() => {
+    spyHeader = jest.spyOn(express.request, "header");
+    spyStatus = jest.spyOn(express.response, "status");
+    spySend = jest.spyOn(express.response, "send");
+  });
+});
