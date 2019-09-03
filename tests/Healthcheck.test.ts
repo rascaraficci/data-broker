@@ -1,21 +1,26 @@
 /* jslint node: true */
 "use strict";
-import { Messenger } from "@dojot/dojot-module";
-import "jest";
-import { RedisClient } from "redis";
+
 import { AgentHealthChecker } from "../src/Healthcheck";
+
+import { Messenger } from "@dojot/dojot-module";
 import { DataTrigger, ServiceStatus, IComponentDetails, Collector } from "@dojot/healthcheck";
+
+import "jest";
 import os from "os";
+import { RedisClient } from "redis";
 
 /**
  * Variables
  */
 /* HealthChecker */
-let mockServiceStatus: ServiceStatus = "pass";
+const mockServiceStatus: ServiceStatus = "pass";
 const mockServiceInfoDynamic = {
   status: mockServiceStatus,
-}
-let mockTrigger = new DataTrigger(mockServiceInfoDynamic, {});
+};
+
+const mockTrigger = new DataTrigger(mockServiceInfoDynamic, {});
+
 // To test the registerMonitor callback, we call it directly in the mocked registerMonitor function
 const mockRegisterMonitor = jest.fn((monitor: IComponentDetails, collectFn?: Collector, periodicity?: number) => {
   if (collectFn) return collectFn(mockTrigger);
@@ -23,6 +28,9 @@ const mockRegisterMonitor = jest.fn((monitor: IComponentDetails, collectFn?: Col
 
 /* Mocked/Spied functions */
 const mockConfig = {
+  process: {
+    uptime: jest.spyOn(process, "uptime").mockReturnValue(42),
+  },
   HealthChecker: {
     registerMonitor: mockRegisterMonitor,
   },
@@ -32,9 +40,6 @@ const mockConfig = {
         getMetadata: jest.fn(),
       },
     },
-  },
-  process: {
-    uptime: jest.spyOn(process, "uptime").mockReturnValue(42),
   },
   RedisClient: {
     on: jest.fn(),
@@ -50,12 +55,12 @@ jest.mock("@dojot/dojot-module", () => ({
 }));
 
 jest.mock("@dojot/healthcheck", () => ({
+  getHTTPRouter: jest.fn(() => ({})),
   DataTrigger: jest.fn(() => ({
     trigger: jest.fn(),
   })),
   HealthChecker: jest.fn(() => mockConfig.HealthChecker),
   Router: jest.fn(),
-  getHTTPRouter: jest.fn(() => ({})),
 }));
 
 jest.mock("os", () => ({
@@ -63,11 +68,11 @@ jest.mock("os", () => ({
   // We need to redefine the EOL symbol, otherwise the log messages will
   // be diplayed in the same line, with an "undefined" written where it should
   // be an "\n"
-  EOL: "\n",
   freemem: jest.fn(),
   loadavg: jest.fn().mockReturnValue([1, 1.1]),
   totalmem: jest.fn().mockReturnValue(100),
   uptime: jest.fn(),
+  EOL: "\n",
 }));
 
 jest.mock("redis", () => ({
@@ -126,7 +131,7 @@ describe("AgentHealthCheck", () => {
         expect(mockConfig.process.uptime).toHaveBeenCalled();
         expect(spyTrigger.mock.calls[0]).toEqual([expect.any(Number), "pass"]);
       });
-    })
+    });
 
     /**
      * Memory Monitor
@@ -170,11 +175,11 @@ describe("AgentHealthCheck", () => {
         model: "testModel",
         speed: 1,
         times: {
-          user: 1,
-          nice: 1,
-          sys: 1,
           idle: 1,
           irq: 1,
+          nice: 1,
+          sys: 1,
+          user: 1,
         },
       };
       let spyCpus: jest.SpyInstance;
@@ -214,7 +219,7 @@ describe("AgentHealthCheck", () => {
         mockConfig.HealthChecker.registerMonitor = jest.fn(
           (monitor: IComponentDetails, collectFn?: Collector, periodicity?: number) => {
             return mockTrigger;
-          })
+          });
       });
 
       afterAll(() => {
@@ -226,7 +231,9 @@ describe("AgentHealthCheck", () => {
       it("should trigger pass - Redis server connected", () => {
         // Testing the "ready" event that should trigger "pass"
         mockConfig.RedisClient.on = jest.fn((event: string, listener: (...args: any[]) => void) => {
-          if (event == "ready") listener();
+          if (event == "ready") {
+            listener();
+          }
         });
         stripped._registerRedisMonitor();
 
@@ -236,7 +243,9 @@ describe("AgentHealthCheck", () => {
       it("should trigger fail - Redis connection has closed", () => {
         // Testing the "ready" event that should trigger "fail"
         mockConfig.RedisClient.on = jest.fn((event: string, listener: (...args: any[]) => void) => {
-          if (event == "end") listener();
+          if (event == "end") {
+            listener();
+          }
         });
         stripped._registerRedisMonitor();
 
@@ -259,8 +268,11 @@ describe("AgentHealthCheck", () => {
       });
 
       it("should get Kafka status", () => {
-        mockConfig.Messenger.consumer.consumer.getMetadata.mockImplementation((metadataOptions: any, cb?: (err: any, data: any) => any) => {
-          if (cb) cb(undefined, "testMetadata");
+        mockConfig.Messenger.consumer.consumer.getMetadata.mockImplementation(
+          (metadataOptions: any, cb?: (err: any, data: any) => any) => {
+          if (cb) {
+            cb(undefined, "testMetadata");
+          }
         });
 
         const status = stripped._getKafkaStatus();
@@ -270,9 +282,12 @@ describe("AgentHealthCheck", () => {
       });
 
       it("should not get Kafka status", () => {
-        mockConfig.Messenger.consumer.consumer.getMetadata.mockImplementation((metadataOptions: any, cb?: (err: any, data: any) => any) => {
-          if (cb) cb("testError", undefined);
-        });
+        mockConfig.Messenger.consumer.consumer.getMetadata.mockImplementation(
+          (metadataOptions: any, cb?: (err: any, data: any) => any) => {
+            if (cb) {
+              cb("testError", undefined);
+            }
+          });
 
         const status = stripped._getKafkaStatus();
 
@@ -283,7 +298,7 @@ describe("AgentHealthCheck", () => {
       it("should trigger pass - Kafka is connected", async () => {
         spyPromise.mockImplementationOnce(() => {
           return new Promise((resolve, reject) => {
-            resolve({ connected: true })
+            resolve({ connected: true });
           });
         });
 
@@ -296,7 +311,7 @@ describe("AgentHealthCheck", () => {
       it("should trigger fail - Kafka is not connected", async () => {
         spyPromise.mockImplementationOnce(() => {
           return new Promise((resolve, reject) => {
-            resolve({ connected: false })
+            resolve({ connected: false });
           });
         });
 
@@ -315,8 +330,7 @@ describe("AgentHealthCheck", () => {
 
         try {
           stripped._registerKafkaMonitor();
-        }
-        catch {
+        } catch {
           expect(spyTrigger).toHaveBeenCalled();
           expect(spyTrigger).toHaveBeenCalledWith([0, "fail", "testError"]);
         }

@@ -1,11 +1,12 @@
 /* jslint node: true */
 "use strict";
 
-import "jest";
-import { IAuthRequest, authParse, authEnforce } from "../../src/api/authMiddleware";
-import express = require("express");
+import { authEnforce, authParse, IAuthRequest } from "../../src/api/authMiddleware";
 import { InvalidTokenError } from "../../src/api/InvalidTokenError";
 import { UnauthorizedError } from "../../src/api/UnauthorizedError";
+
+import express = require("express");
+import "jest";
 
 /**
  * Variables
@@ -34,8 +35,8 @@ const mockConfig = {
     response: jest.fn(() => ({
       get: jest.fn(),
       json: jest.fn(),
-      status: jest.fn(),
       send: jest.fn(),
+      status: jest.fn(),
     })),
   },
 };
