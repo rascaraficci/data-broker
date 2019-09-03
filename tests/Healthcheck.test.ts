@@ -127,5 +127,38 @@ describe("AgentHealthCheck", () => {
         expect(spyTrigger.mock.calls[0]).toEqual([expect.any(Number), "pass"]);
       });
     })
+
+    /**
+     * Memory Monitor
+     */
+    describe("Memory", () => {
+      let spyTotalmem: jest.SpyInstance;
+      let spyFreemem: jest.SpyInstance;
+
+      beforeAll(() => {
+        spyFreemem = jest.spyOn(os, "freemem");
+        spyTotalmem = jest.spyOn(os, "totalmem");
+      });
+
+      it("should trigger warn - memory usage is high", () => {
+        spyFreemem.mockReturnValue(20);
+
+        stripped._registerMemoryMonitor();
+
+        expect(spyTotalmem).toHaveBeenCalled();
+        expect(spyFreemem).toHaveBeenCalled();
+        expect(spyTrigger.mock.calls[0]).toEqual([expect.any(Number), "warn"]);
+      });
+
+      it("should trigger pass - memory usage is normal", () => {
+        spyFreemem.mockReturnValue(80);
+
+        stripped._registerMemoryMonitor();
+
+        expect(spyTotalmem).toHaveBeenCalled();
+        expect(spyFreemem).toHaveBeenCalled();
+        expect(spyTrigger.mock.calls[0]).toEqual([expect.any(Number), "pass"]);
+      });
+    });
   });
 });
