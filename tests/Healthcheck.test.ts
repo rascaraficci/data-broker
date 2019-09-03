@@ -105,8 +105,15 @@ describe("AgentHealthCheck", () => {
     expect(stripped.redisClient).toBe(redisClient);
   });
 
-  it("should register monitors", () => {
-    hc.init();
-    expect(mockConfig.HealthCheck.registerMonitor).toHaveBeenCalledTimes(5);
+  /**
+   * Monitors tests
+   */
+  describe("Monitors", () => {
+    const spyTrigger: jest.SpyInstance = jest.spyOn(mockTrigger, "trigger");
+
+    it("should register monitors", () => {
+      hc.init();
+      expect(mockConfig.HealthChecker.registerMonitor).toHaveBeenCalledTimes(5);
+    });
   });
 });
