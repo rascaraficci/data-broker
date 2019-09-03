@@ -205,5 +205,43 @@ describe("AgentHealthCheck", () => {
         expect(spyTrigger.mock.calls[0]).toEqual([expect.any(Number), "warn"]);
       });
     });
+
+    /**
+     * Redis Monitor
+     */
+    describe("Redis", () => {
+      beforeAll(() => {
+        mockConfig.HealthChecker.registerMonitor = jest.fn(
+          (monitor: IComponentDetails, collectFn?: Collector, periodicity?: number) => {
+            return mockTrigger;
+          })
+      });
+
+      afterAll(() => {
+        // Restoring the original mocked functions
+        mockConfig.RedisClient.on = jest.fn();
+        mockConfig.HealthChecker.registerMonitor = mockRegisterMonitor;
+      });
+
+      it("should trigger pass - Redis server connected", () => {
+        // Testing the "ready" event that should trigger "pass"
+        mockConfig.RedisClient.on = jest.fn((event: string, listener: (...args: any[]) => void) => {
+          if (event == "ready") listener();
+        });
+        stripped._registerRedisMonitor();
+
+        expect(spyTrigger.mock.calls[0]).toEqual([true, "pass"]);
+      });
+
+      it("should trigger fail - Redis connection has closed", () => {
+        // Testing the "ready" event that should trigger "fail"
+        mockConfig.RedisClient.on = jest.fn((event: string, listener: (...args: any[]) => void) => {
+          if (event == "end") listener();
+        });
+        stripped._registerRedisMonitor();
+
+        expect(spyTrigger.mock.calls[0]).toEqual([false, "fail"]);
+      });
+    });
   });
 });
