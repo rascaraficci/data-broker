@@ -4,7 +4,7 @@
 import { AgentHealthChecker } from "../src/Healthcheck";
 
 import { Messenger } from "@dojot/dojot-module";
-import { DataTrigger, ServiceStatus, IComponentDetails, Collector } from "@dojot/healthcheck";
+import { Collector, DataTrigger, IComponentDetails, ServiceStatus } from "@dojot/healthcheck";
 
 import "jest";
 import os from "os";
@@ -64,15 +64,15 @@ jest.mock("@dojot/healthcheck", () => ({
 }));
 
 jest.mock("os", () => ({
-  cpus: jest.fn().mockReturnThis(),
   // We need to redefine the EOL symbol, otherwise the log messages will
   // be diplayed in the same line, with an "undefined" written where it should
   // be an "\n"
+  EOL: "\n",
+  cpus: jest.fn().mockReturnThis(),
   freemem: jest.fn(),
   loadavg: jest.fn().mockReturnValue([1, 1.1]),
   totalmem: jest.fn().mockReturnValue(100),
   uptime: jest.fn(),
-  EOL: "\n",
 }));
 
 jest.mock("redis", () => ({
@@ -231,7 +231,7 @@ describe("AgentHealthCheck", () => {
       it("should trigger pass - Redis server connected", () => {
         // Testing the "ready" event that should trigger "pass"
         mockConfig.RedisClient.on = jest.fn((event: string, listener: (...args: any[]) => void) => {
-          if (event == "ready") {
+          if (event === "ready") {
             listener();
           }
         });
@@ -243,7 +243,7 @@ describe("AgentHealthCheck", () => {
       it("should trigger fail - Redis connection has closed", () => {
         // Testing the "ready" event that should trigger "fail"
         mockConfig.RedisClient.on = jest.fn((event: string, listener: (...args: any[]) => void) => {
-          if (event == "end") {
+          if (event === "end") {
             listener();
           }
         });
