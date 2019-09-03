@@ -1,15 +1,40 @@
+/* jslint node: true */
 "use strict";
 import { Messenger } from "@dojot/dojot-module";
 import "jest";
 import { RedisClient } from "redis";
 import { AgentHealthChecker } from "../src/Healthcheck";
+import { DataTrigger, ServiceStatus, IComponentDetails, Collector } from "@dojot/healthcheck";
+import os from "os";
 
 /**
  * Variables
  */
+/* HealthChecker */
+let mockServiceStatus: ServiceStatus = "pass";
+const mockServiceInfoDynamic = {
+  status: mockServiceStatus,
+}
+let mockTrigger = new DataTrigger(mockServiceInfoDynamic, {});
+// To test the registerMonitor callback, we call it directly in the mocked registerMonitor function
+const mockRegisterMonitor = jest.fn((monitor: IComponentDetails, collectFn?: Collector, periodicity?: number) => {
+  if (collectFn) return collectFn(mockTrigger);
+});
+
+/* Mocked/Spied functions */
 const mockConfig = {
-  HealthCheck: {
-    registerMonitor: jest.fn(),
+  HealthChecker: {
+    registerMonitor: mockRegisterMonitor,
+  },
+  Messenger: {
+    consumer: {
+      consumer: {
+        getMetadata: jest.fn(),
+      },
+    },
+  },
+  process: {
+    uptime: jest.spyOn(process, "uptime").mockReturnValue(42),
   },
   RedisClient: {
     on: jest.fn(),
@@ -21,18 +46,36 @@ const mockConfig = {
  * Mocks
  */
 jest.mock("@dojot/dojot-module", () => ({
-  Messenger: jest.fn(),
+  Messenger: jest.fn(() => mockConfig.Messenger),
+}));
+
+jest.mock("@dojot/healthcheck", () => ({
+  DataTrigger: jest.fn(() => ({
+    trigger: jest.fn(),
+  })),
+  HealthChecker: jest.fn(() => mockConfig.HealthChecker),
+  Router: jest.fn(),
+  getHTTPRouter: jest.fn(() => ({})),
+}));
+
+jest.mock("os", () => ({
+  cpus: jest.fn().mockReturnThis(),
+  // We need to redefine the EOL symbol, otherwise the log messages will
+  // be diplayed in the same line, with an "undefined" written where it should
+  // be an "\n"
+  EOL: "\n",
+  freemem: jest.fn(),
+  loadavg: jest.fn().mockReturnValue([1, 1.1]),
+  totalmem: jest.fn().mockReturnValue(100),
+  uptime: jest.fn(),
 }));
 
 jest.mock("redis", () => ({
   RedisClient: jest.fn(() => mockConfig.RedisClient),
 }));
 
-jest.mock("@dojot/healthcheck", () => ({
-  HealthChecker: jest.fn(() => mockConfig.HealthCheck),
-  Router: jest.fn(),
-  getHTTPRouter: jest.fn(() => ({})),
-}));
+jest.mock("node-rdkafka");
+jest.mock("process");
 
 describe("AgentHealthCheck", () => {
   let messenger: Messenger;
