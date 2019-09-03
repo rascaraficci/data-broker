@@ -100,5 +100,33 @@ describe("authMiddleware", () => {
       expect(spyHeader).toHaveBeenCalled();
       expect(mockConfig.express.next).toHaveBeenCalled();
     });
+
+    /**
+     * Failure tests
+     */
+    it("should not parse - token undefined", () => {
+      mockConfig.express.request.header.mockReturnValueOnce(undefined);
+      authParse(req, res, mockConfig.express.next);
+
+      expect(req.user).toBeUndefined();
+      expect(req.userid).toBeUndefined();
+      expect(req.service).toBeUndefined();
+
+      expect(mockConfig.express.next).toHaveBeenCalled();
+    });
+
+    it("should not parse - token malformed", () => {
+      spyHeader.mockReturnValueOnce("testMalformedToken");
+
+      authParse(req, res, mockConfig.express.next);
+
+      expect(spyStatus).toHaveBeenCalledWith(401);
+      expect(spySend).toHaveBeenCalledWith(expect.any(InvalidTokenError));
+      expect(mockConfig.express.next).not.toHaveBeenCalled();
+
+      expect(req.user).toBeUndefined();
+      expect(req.userid).toBeUndefined();
+      expect(req.service).toBeUndefined();
+    });
   });
 });
