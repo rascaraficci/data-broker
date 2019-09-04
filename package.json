@@ -37,6 +37,7 @@
     "@types/kafka-node": "^2.0.8",
     "@types/node": "^10.14.16",
     "@types/uuid": "^3.4.3",
+    "axios": "^0.18.1",
     "body-parser": "^1.18.2",
     "eslint": "^4.19.1",
     "express": "^4.16.0",
