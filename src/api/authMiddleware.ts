@@ -6,16 +6,14 @@ import express = require("express");
 import { InvalidTokenError } from "./InvalidTokenError";
 import { UnauthorizedError } from "./UnauthorizedError";
 
+const TAG = { filename: "Auth" };
+
 /**
  * Open up a base64 encoded string.
  * @param data The data to be decoded.
  */
 function b64decode(data: string): string {
-  if (typeof Buffer.from === "function") {
-    return Buffer.from(data, "base64").toString();
-  } else {
-    return (new Buffer(data, "base64")).toString();
-  }
+  return Buffer.from(data, "base64").toString();
 }
 
 /**
@@ -38,9 +36,10 @@ function authParse(req: IAuthRequest, res: express.Response, next: express.NextF
 
   const token = rawToken!.split(".");
   if (token.length !== 3) {
-    logger.error("Got invalid request: token is malformed.", {filename: "auth"});
-    logger.error(`Token is: ${rawToken}`, {filename: "auth"});
-    res.status(401).send(new InvalidTokenError());
+    logger.error("Got invalid request: token is malformed.", TAG);
+    logger.error(`Token is: ${rawToken}`, TAG);
+    res.status(401);
+    res.send(new InvalidTokenError());
     return;
   }
 
@@ -55,14 +54,16 @@ function authParse(req: IAuthRequest, res: express.Response, next: express.NextF
 function authEnforce(req: IAuthRequest, res: express.Response, next: express.NextFunction) {
   if (req.user === undefined || req.user!.trim() === "" ) {
     // valid token must be supplied
-    logger.error("Got invalid request: user is not defined in token.", {filename: "auth"});
-    logger.error(`Token is: ${req.header("authorization")}`, {filename: "auth"});
-    res.status(401).send(new UnauthorizedError());
+    logger.error("Got invalid request: user is not defined in token.", TAG);
+    logger.error(`Token is: ${req.header("authorization")}`, TAG);
+    res.status(401);
+    res.send(new UnauthorizedError());
   } else if (req.service === undefined || req.service!.trim() === "" ) {
     // valid token must be supplied
-    logger.error("Got invalid request: service is not defined in token.", {filename: "auth"});
-    logger.error(`Token is: ${req.header("authorization")}`, {filename: "auth"});
-    res.status(401).send(new UnauthorizedError());
+    logger.error("Got invalid request: service is not defined in token.", TAG);
+    logger.error(`Token is: ${req.header("authorization")}`, TAG);
+    res.status(401);
+    res.send(new UnauthorizedError());
   } else {
     next();
   }
