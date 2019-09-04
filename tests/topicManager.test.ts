@@ -1,6 +1,8 @@
 /* jslint node: true */
 "use strict";
 
+import { logger } from "@dojot/dojot-module-logger";
+
 import "jest";
 import { KafkaFactory } from "../src/KafkaFactory";
 import { TopicManager } from "../src/topicManager";
@@ -116,6 +118,19 @@ describe("TopicManager", () => {
   describe("setConfigTopics", () => {
     it("should set a topic config - valid subject", () => {
       expect(() => topicManager.setConfigTopics("test", sampleConfig)).not.toThrow();
+    });
+
+    it("should not set a topic config - profiles could not be config", () => {
+      mockConfig.ClientWrapper.setConfig.mockImplementationOnce((key, val) => {
+        throw new Error("should throw");
+      });
+
+      const spyLoggerError = jest.spyOn(logger, "error");
+
+      expect(() => topicManager.setConfigTopics("test", sampleConfig)).not.toThrow();
+      // That's kinda ugly but seems to be the only way to test if the catch part was
+      // being called
+      expect(spyLoggerError).toHaveBeenCalled();
     });
 
     it("should not set a topic config - invalid subject", () => {
@@ -235,6 +250,12 @@ describe("TopicManager", () => {
 
     it("should handle a request - data with generic service name", async () => {
       sampleConfig = Object.assign({}, testConfig);
+      await stripped.handleRequest(testRequest);
+      expect(mockConfig.KafkaProducer.createTopic).toHaveBeenCalledTimes(1);
+    });
+
+    it("should handle a request - data with another service name", async () => {
+      sampleConfig = { "anotherService": {} };
       await stripped.handleRequest(testRequest);
       expect(mockConfig.KafkaProducer.createTopic).toHaveBeenCalledTimes(1);
     });
