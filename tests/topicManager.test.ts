@@ -255,7 +255,7 @@ describe("TopicManager", () => {
     });
 
     it("should handle a request - data with another service name", async () => {
-      sampleConfig = { "anotherService": {} };
+      sampleConfig = { anotherService: {} };
       await stripped.handleRequest(testRequest);
       expect(mockConfig.KafkaProducer.createTopic).toHaveBeenCalledTimes(1);
     });
