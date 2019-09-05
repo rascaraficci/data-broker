@@ -41,7 +41,7 @@
     "body-parser": "^1.18.2",
     "eslint": "^4.19.1",
     "express": "^4.16.0",
-    "jest": "^24.9.0",
+    "jest": "^23.6.0",
     "jshint": "^2.10.2",
     "kafka-node": "^2.6.1",
     "morgan": "^1.9.0",
@@ -60,7 +60,8 @@
     "@types/socket.io": "^1.4.31",
     "hooks": "^0.3.2",
     "snyk": "^1.224.0",
-    "ts-jest": "^24.0.2"
+    "ts-jest": "^23.10.5",
+    "jasmine-ts": "0.3.0"
   },
   "jest": {
     "roots": [
