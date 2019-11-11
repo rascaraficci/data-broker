@@ -150,6 +150,22 @@ docker build -t <tag> -f docker/Dockerfile .
 Then an image tagged as `<tag>` will be made available. Do notice that a pre-built "official"
 version for this component may be found at dojot's [dockerhub](https://hub.docker.com/r/dojot/data-broker/).
 
+## Removal Notes
+
+The Subscription service is being removed from Data Broker because of its lack of use. As a consequence,
+the endpoint `/subscription` is being removed.
+
+With the removal of subscription-engine.ts, other files needed to be excluded from the repository:
+
+- Condition.ts
+- consumer.ts
+- Event.ts
+- Notification.ts
+- simple-tools.ts
+- Subscription.ts
+
+All their tests were removed too.
+
 ## Documentation
 
 - [Development API docs](https://dojot.github.io/data-broker/apiary_development.html)

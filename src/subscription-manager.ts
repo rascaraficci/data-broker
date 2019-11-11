@@ -11,18 +11,15 @@ import { AgentHealthChecker } from "./Healthcheck";
 import { ITopicProfile } from "./RedisClientWrapper";
 import { RedisManager } from "./redisManager";
 import { SocketIOSingleton } from "./socketIo";
-import { SubscriptionEngine, SubscriptionType } from "./subscription-engine";
 import { TopicManagerBuilder } from "./TopicBuilder";
 
 const TAG = { filename: "SubscriptionManager" };
 
 class DataBroker {
   private app: express.Application;
-  private subscrEngine: SubscriptionEngine;
 
-  constructor(app: express.Application, subscriptionEngine: SubscriptionEngine) {
+  constructor(app: express.Application) {
     this.app = app;
-    this.subscrEngine = subscriptionEngine;
   }
 
   public start() {
@@ -78,23 +75,6 @@ class DataBroker {
   }
 
   protected registerTopicEndpoints() {
-    /*
-     * Subscription management endpoints
-     */
-    this.app.post("/subscription", (request: IAuthRequest, response: express.Response) => {
-      const subscription = request.body;
-      logger.debug("Received a POST request in /subscription.", TAG);
-      logger.debug(`Subscription body is: ${util.inspect(subscription, { depth: null })}`, TAG);
-      if ("id" in subscription.subject.entities) {
-        this.subscrEngine.addSubscription(SubscriptionType.id, subscription.subject.entities.id, subscription);
-      } else if ("model" in subscription.subject.entities) {
-        this.subscrEngine.addSubscription(SubscriptionType.model, subscription.subject.entities.model, subscription);
-      } else if ("type" in subscription.subject.entities) {
-        this.subscrEngine.addSubscription(SubscriptionType.type, subscription.subject.entities.type, subscription);
-      }
-      response.send("Ok!");
-    });
-
     /*
      * Topic registry endpoints
      */
@@ -203,8 +183,7 @@ function main() {
   logger.setLevel(config.logging.level);
 
   const app = express();
-  const subscrEngine = new SubscriptionEngine();
-  const dataBroker = new DataBroker(app, subscrEngine);
+  const dataBroker = new DataBroker(app);
   dataBroker.start();
 }
 
