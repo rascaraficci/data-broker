@@ -78,33 +78,35 @@ without errors is:
 
 These are the environment variables used by Data Broker code.
 
-Key                        | Purpose                                  | Default Value
--------------------------- | ---------------------------------------- | --------------
-DATABROKER_CACHE_HOST      | Redis cache host address                 | "data-broker-redis"
-DATABROKER_KAFKA_ADDRESS   | Kafka address                            | "kafka"
-DATABROKER_KAFKA_PORT      | Kafka port                               | 9092
-HC_CPU_USAGE_TIMEOUT       | Healthcheck CPU usage timeout (ms)       | 300000
-HC_KAFKA_TIMEOUT           | Healthcheck Kafka timeout (ms)           | 30000
-HC_MEMORY_USAGE_TIMEOUT    | Healthcheck Memory usage timeout (ms)    | 300000
-HC_UPTIME_TIMEOUT          | Healthcheck Uptime timeout (ms)          | 300000
-LOG_LEVEL                  | Logger level (error, warn, info, debug)  | "info"
-SERVICE_PORT               | Data Broker service port                 | 80
+Key                      | Purpose                                      | Default Value
+------------------------ | -------------------------------------------- | -------------------
+DATABROKER_CACHE_HOST    | Redis cache host address                     | "data-broker-redis"
+DATABROKER_KAFKA_ADDRESS | Kafka address                                | "kafka"
+DATABROKER_KAFKA_PORT    | Kafka port                                   | 9092
+HC_CPU_USAGE_TIMEOUT     | Healthcheck CPU usage timeout (ms)           | 300000
+HC_KAFKA_TIMEOUT         | Healthcheck Kafka timeout (ms)               | 30000
+HC_MEMORY_USAGE_TIMEOUT  | Healthcheck Memory usage timeout (ms)        | 300000
+HC_UPTIME_TIMEOUT        | Healthcheck Uptime timeout (ms)              | 300000
+KAFKA_NUM_PARTITIONS     | Default number of partitions in Kafka topics | 10
+KAFK_REPLICATION_FACTOR  | Default replication factor in Kafka topics   | 1
+LOG_LEVEL                | Logger level (error, warn, info, debug)      | "info"
+SERVICE_PORT             | Data Broker service port                     | 80
 
 Some environment variables are used by Dojot libraries that Data Broker uses.
 
-Key                         | Purpose                                                      | Default Value
---------------------------- | ----------------------------------------                     | --------------
-AUTH_URL                    | Auth host address                                            | "http://auth:5000"
-DATA_BROKER_URL             | Data Broker host address                                     | "http://data-broker"
-DEVICE_MANAGER_URL          | Device Manager host address                                  | "http://device-manager:5000"
-DOJOT_MANAGEMENT_TENANT     | Management tenant                                            | "dojot-management"
-DOJOT_MANAGEMENT_USER       | Management user                                              | "dojot-management"
-DOJOT_SUBJECT_DEVICES       | Subject for device management messages                       | "dojot.device-manager.device"
-DOJOT_SUBJECT_DEVICE_DATA   | Subject for device data messages                             | "device-data"
-DOJOT_SUBSCRIPTION_HOLDOFF  | Time (ms) before attempting to subscribe to a set of topics  | 2500
-DOJOT_SUBJECT_TENANCY       | Subject for tenancy messages                                 | "dojot.tenancy"
-KAFKA_GROUP_ID              | Kafka group ID for consumers                                 | "kafka"
-KAFKA_HOSTS                 | List of Kafka instances                                      | "kafka:9092"
+Key                        | Purpose                                                     | Default Value
+-------------------------- | ----------------------------------------------------------- | -----------------------------
+AUTH_URL                   | Auth host address                                           | "http://auth:5000"
+DATA_BROKER_URL            | Data Broker host address                                    | "http://data-broker"
+DEVICE_MANAGER_URL         | Device Manager host address                                 | "http://device-manager:5000"
+DOJOT_MANAGEMENT_TENANT    | Management tenant                                           | "dojot-management"
+DOJOT_MANAGEMENT_USER      | Management user                                             | "dojot-management"
+DOJOT_SUBJECT_DEVICES      | Subject for device management messages                      | "dojot.device-manager.device"
+DOJOT_SUBJECT_DEVICE_DATA  | Subject for device data messages                            | "device-data"
+DOJOT_SUBSCRIPTION_HOLDOFF | Time (ms) before attempting to subscribe to a set of topics | 2500
+DOJOT_SUBJECT_TENANCY      | Subject for tenancy messages                                | "dojot.tenancy"
+KAFKA_GROUP_ID             | Kafka group ID for consumers                                | "kafka"
+KAFKA_HOSTS                | List of Kafka instances                                     | "kafka:9092"
 
 ## How to run
 

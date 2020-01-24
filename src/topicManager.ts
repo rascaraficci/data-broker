@@ -8,6 +8,7 @@ import { KafkaProducer } from "./producer";
 import { QueuedTopic } from "./QueuedTopic";
 import { ClientWrapper, IAutoScheme } from "./RedisClientWrapper";
 import { RedisManager } from "./redisManager";
+import { kafka } from "./config";
 
 const TAG = { filename: "TopicManager" };
 
@@ -123,7 +124,11 @@ class TopicManager {
   }
 
   private handleRequest(request: QueuedTopic) {
-    const profileConfigs: IAutoScheme = { num_partitions: 1, replication_factor: 1 };
+    const profileConfigs: IAutoScheme = {
+      num_partitions: kafka.numPartitions,
+      replication_factor: kafka.replicationFactor,
+    };
+
     const genericService: string = "*";
     this.redis.getConfig(request.subject).then((data: any) => {
       if (data !== undefined) {
