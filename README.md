@@ -87,7 +87,7 @@ HC_CPU_USAGE_TIMEOUT     | Healthcheck CPU usage timeout (ms)           | 300000
 HC_KAFKA_TIMEOUT         | Healthcheck Kafka timeout (ms)               | 30000
 HC_MEMORY_USAGE_TIMEOUT  | Healthcheck Memory usage timeout (ms)        | 300000
 HC_UPTIME_TIMEOUT        | Healthcheck Uptime timeout (ms)              | 300000
-KAFKA_NUM_PARTITIONS     | Default number of partitions in Kafka topics | 10
+KAFKA_NUM_PARTITIONS     | Default number of partitions in Kafka topics | 1
 KAFK_REPLICATION_FACTOR  | Default replication factor in Kafka topics   | 1
 LOG_LEVEL                | Logger level (error, warn, info, debug)      | "info"
 SERVICE_PORT             | Data Broker service port                     | 80
