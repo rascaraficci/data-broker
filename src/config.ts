@@ -8,7 +8,7 @@ const kafka = {
   },
   kafkaAddress: process.env.DATABROKER_KAFKA_ADDRESS || "kafka",
   kafkaPort: process.env.DATABROKER_KAFKA_PORT || 9092,
-  numPartitions: Number(process.env.KAFKA_NUM_PARTITIONS) || 10,
+  numPartitions: Number(process.env.KAFKA_NUM_PARTITIONS) || 1,
   replicationFactor: Number(process.env.KAFKA_REPLICATION_FACTOR) || 1,
 };
 
