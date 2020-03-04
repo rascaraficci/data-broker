@@ -168,18 +168,18 @@ describe("TopicManager", () => {
     });
   });
 
-  describe("parseKey", () => {
+  describe("createTopicName", () => {
     beforeEach(() => {
       stripped = (topicManager as any);
     });
 
-    it("should create the key", () => {
+    it("should create the topic name", () => {
       const testSubject = "testSubject";
-      expect(stripped.parseKey(testSubject)).toEqual(`ti:${testService}:${testSubject}`);
+      expect(stripped.createTopicName(testSubject)).toEqual(`${testService}.${testSubject}`);
     });
 
-    it("should not create the key", () => {
-      expect(() => stripped.parseKey("")).toThrow();
+    it("should not create the topic name", () => {
+      expect(() => stripped.createTopicName("")).toThrow();
     });
   });
 
