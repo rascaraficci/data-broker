@@ -2,13 +2,11 @@
 "use strict";
 
 import { logger } from "@dojot/dojot-module-logger";
-import uuid = require("uuid/v4");
+import { kafka } from "./config";
 import { KafkaFactory } from "./KafkaFactory";
 import { KafkaProducer } from "./producer";
 import { QueuedTopic } from "./QueuedTopic";
-import { ClientWrapper, IAutoScheme } from "./RedisClientWrapper";
-import { RedisManager } from "./redisManager";
-import { kafka } from "./config";
+import { IAutoScheme } from "./RedisClientWrapper";
 
 const TAG = { filename: "TopicManager" };
 
@@ -16,9 +14,7 @@ type TopicCallback = (error?: any, topic?: string) => void;
 
 // TODO this should also handle kafka ACL configuration
 class TopicManager {
-  private redis: ClientWrapper;
-  private service: string;
-  private getSet: string;
+  private service: string; // The service is the tenant
   private producer: KafkaProducer;
   private producerReady: boolean;
   private topicQueue: QueuedTopic[];
@@ -29,10 +25,9 @@ class TopicManager {
     }
 
     this.service = service;
-    this.redis = RedisManager.getClient();
-    this.getSet = __dirname + "/lua/setGet.lua";
     this.producerReady = false;
     this.topicQueue = [];
+
     logger.debug("Creating Kafka Producer...", TAG);
     this.producer = new KafkaProducer(new KafkaFactory(), () => {
       this.producerReady = true;
