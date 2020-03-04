@@ -1,5 +1,5 @@
 import "jest";
-import { ClientWrapper, IAutoScheme, ITopicProfile } from "../src/RedisClientWrapper";
+import { ClientWrapper } from "../src/RedisClientWrapper";
 
 class RedisClientStub {
   public evalsha: jest.Mock;
