@@ -125,9 +125,16 @@ class TopicManager {
     }
   }
 
-  private parseKey(subject: string) {
-    this.assertTopic(subject, "a valid subject must be provided");
-    return "ti:" + this.service + ":" + subject;
+  /**
+   * Create the topic for the passed subject.
+   *
+   * @param subject
+   *
+   * @returns the topic in the format `ti:<tenant>:<subject>`.
+   */
+  private createTopicName(subject: string): string {
+    this.assertTopic(subject);
+    return this.service + "." + subject;
   }
 
   private handleRequest(request: QueuedTopic) {
