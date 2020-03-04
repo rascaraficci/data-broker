@@ -33,17 +33,6 @@ class ClientWrapper {
   }
 
   /**
-   * Sets data into redis[1]
-   *
-   * @param key key 'tenant:subject' to be fetched
-   * @param val value of the key
-   */
-
-  public setConfig(key: string, val: any) {
-    this.client.select(1);
-    this.client.set(key, val);
-  }
-  /**
    * Run a simple script to fetch or update data in REDIS.
    *
    * @param path Where the script is located
@@ -51,7 +40,6 @@ class ClientWrapper {
    * @param vals If defined, the values to be updated in REDIS
    * @param callback Callback invoked when the request finishes.
    */
-
   public runScript(path: string, keys: string[], vals: string[], callback: (error: any, data: any) => void) {
     const script = fs.readFileSync(path, { encoding: "utf-8" });
     const sha1 = crypto.createHash("sha1").update(script).digest("hex");
