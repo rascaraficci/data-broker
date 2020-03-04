@@ -114,14 +114,10 @@ class SocketIOHandler {
 
     logger.debug("Creating new topic/retrieving current for tenant", TAG);
     const topicManager = TopicManagerBuilder.get(tenant);
-    topicManager.getCreateTopic(
-      "device-data",
-      (error?: any, topic?: string) => {
+    topicManager.createTopic("device-data", (error?: any, topic?: string) => {
         if (error || !topic) {
-          logger.error(
-            `Failed to find appropriate topic for tenant: ${
-            error ? error : "Unknown topic"
-            }`, TAG);
+          logger.error(`Failed to find appropriate topic for tenant: \
+            ${error ? error : "Unknown topic"}`, TAG);
           return;
         }
       });
