@@ -1,11 +1,12 @@
 /* jslint node: true */
 "use strict";
 
-import { logger } from "@dojot/dojot-module-logger";
-
 import "jest";
 import { KafkaFactory } from "../src/KafkaFactory";
 import { TopicManager } from "../src/topicManager";
+
+// Used to test the KafkaProducer callback
+let kafkaProducerInit: undefined | Function = undefined;
 
 /**
  * Mocks
@@ -17,6 +18,7 @@ jest.mock("../src/KafkaFactory", () => ({
 jest.mock("../src/producer", () => ({
   KafkaProducer: jest.fn((kafkaFactory: KafkaFactory, init: () => void) => {
     init();
+    kafkaProducerInit = init;
     return mockConfig.KafkaProducer;
   }),
 }));
@@ -100,8 +102,18 @@ describe("TopicManager", () => {
       expect(() => new TopicManager("")).toThrow();
     });
 
+    it("should call handleRequest inside the init function", () => {
+      if (kafkaProducerInit !== undefined) {
+        stripped = topicManager as any;
+        stripped.topicQueue = [{}];
+        stripped.handleRequest = jest.fn();
 
+        kafkaProducerInit();
 
+        expect(stripped.handleRequest).toBeCalledTimes(1)
+      } else {
+        fail("init is undefined")
+      }
     });
   });
 
