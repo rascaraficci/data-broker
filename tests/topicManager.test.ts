@@ -6,7 +6,8 @@ import { KafkaFactory } from "../src/KafkaFactory";
 import { TopicManager } from "../src/topicManager";
 
 // Used to test the KafkaProducer callback
-let kafkaProducerInit: undefined | Function = undefined;
+type CallbackFunction = () => void;
+let kafkaProducerInit: undefined | CallbackFunction;
 
 /**
  * Mocks
