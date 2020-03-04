@@ -141,23 +141,6 @@ class DataBroker {
       response.status(200).send({ message: "Configs set successfully" });
     });
 
-    /**
-     * Editing profiles end point
-     */
-    this.app.put("/topic/:subject/profile/:tenant", (req: IAuthRequest, response: express.Response) => {
-      logger.debug(`Received a PUT request in /topic/${req.params.subject}/profile/${req.params.tenant}`, TAG);
-
-      if (req.service === undefined) {
-        logger.error("Service is not defined in PUT request headers.", TAG);
-        response.status(401).send({ error: "Missing service in PUT request header" });
-      } else {
-        const topics = TopicManagerBuilder.get(req.service);
-        topics.setConfigTopics(req.params.subject, req.body);
-      }
-
-      response.status(200).send({ message: "Configs edited/created successfully" });
-
-    });
   }
   protected registerSocketIOEndpoints() {
 
