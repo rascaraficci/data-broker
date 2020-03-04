@@ -88,7 +88,7 @@ class DataBroker {
       } else {
         const topics = TopicManagerBuilder.get(req.service);
         logger.debug(`Topic for service ${req.service} and subject ${req.params.subject}.`, TAG);
-        topics.getCreateTopic(req.params.subject, (error: any, data: any) => {
+        topics.createTopic(req.params.subject, (error: any, data: any) => {
           if (error) {
             logger.error(`Failed to process topic. Error is ${error}`, TAG);
             response.status(500);
