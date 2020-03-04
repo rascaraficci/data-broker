@@ -210,20 +210,20 @@ describe("TopicManager", () => {
       sampleConfig = originalSampleConfig;
     });
 
-    it("should handle a request - data with service name", async () => {
-      await stripped.handleRequest(testRequest);
+    it("should handle a request - data with service name", () => {
+      stripped.handleRequest(testRequest);
       expect(mockConfig.KafkaProducer.createTopic).toHaveBeenCalledTimes(1);
     });
 
-    it("should handle a request - data with generic service name", async () => {
+    it("should handle a request - data with generic service name", () => {
       sampleConfig = Object.assign({}, testConfig);
-      await stripped.handleRequest(testRequest);
+      stripped.handleRequest(testRequest);
       expect(mockConfig.KafkaProducer.createTopic).toHaveBeenCalledTimes(1);
     });
 
-    it("should handle a request - data with another service name", async () => {
+    it("should handle a request - data with another service name", () => {
       sampleConfig = { anotherService: {} };
-      await stripped.handleRequest(testRequest);
+      stripped.handleRequest(testRequest);
       expect(mockConfig.KafkaProducer.createTopic).toHaveBeenCalledTimes(1);
     });
   });
