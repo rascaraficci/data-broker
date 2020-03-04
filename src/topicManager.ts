@@ -44,61 +44,32 @@ class TopicManager {
     });
     logger.debug("... Kafka Producer created.", TAG);
   }
-  public getConfigTopics(subject: string): Promise<any> {
-    this.assertTopic(subject, "a valid subject must be provided");
-    return this.redis.getConfig(subject);
-  }
 
-  public setConfigTopics(subject: string, body: any) {
-    this.assertTopic(subject, "a valid subject must be provided");
-    try {
-      const configs: any = body;
-      let ten: any;
-      for (ten in configs) {
-        if (configs.hasOwnProperty(ten)) {
-          const key: string = ten + ":" + subject;
-          const val: string = JSON.stringify(configs[ten]);
-          this.redis.setConfig(key, val);
-        }
-      }
-    } catch (error) {
-      logger.error(`Profiles could not be config. Error: ${error}`, TAG);
-    }
-  }
-
-  public editConfigTopics(subject: string, tenant: string, body: any) {
-    this.assertTopic(subject, "a valid subject must be provided");
-    this.assertTopic(tenant, "a valid tenant must be provided");
-    const key: string = tenant + ":" + subject;
-    this.redis.setConfig(key, JSON.stringify(body[tenant]));
-  }
-
-  public getCreateTopic(subject: string, callback: TopicCallback): void {
-    logger.debug("Retrieving/creating new topic...", TAG);
+  /**
+   * Create a topic for the given `subject`.
+   *
+   * @param subject
+   * @param callback
+   */
+  public createTopic(subject: string, callback: TopicCallback): void {
+    logger.debug(`Retrieving/creating topic...`, TAG);
     logger.debug(`Subject: ${subject}`, TAG);
+
     try {
-      const key: string = this.parseKey(subject);
-      const tid: string = uuid();
-      this.redis.runScript(this.getSet, [key], [tid], (err: any, topic: string) => {
-        if (err) {
-          logger.debug("... topic could not be created/retrieved.", TAG);
-          logger.error(`Error while calling REDIS: ${err}`, TAG);
-          callback(err);
-        } else {
-          logger.debug("... topic was properly created/retrieved.", TAG);
-          const request = { topic, subject, callback };
-          if (this.producerReady) {
-            logger.debug("Handling all pending requests...", TAG);
-            this.handleRequest(request);
-            logger.debug("... all pending requests were handled.", TAG);
-          } else {
-            logger.debug("Producer is not yet ready.", TAG);
-            logger.debug("Adding to the pending requests queue...", TAG);
-            this.topicQueue.push(request);
-            logger.debug("... topic was added to queue.", TAG);
-          }
-        }
-      });
+      const topic = this.createTopicName(subject);
+      const request = { topic, subject, callback };
+
+      if (this.producerReady) {
+        logger.debug("Handling all pending requests...", TAG);
+        this.handleRequest(request);
+        logger.debug("... all pending requests were handled.", TAG);
+      } else {
+        logger.debug("Producer is not yet ready.", TAG);
+        logger.debug("Adding to the pending requests queue...", TAG);
+        this.topicQueue.push(request);
+        logger.debug("... topic was added to queue.", TAG);
+      }
+
     } catch (error) {
       logger.debug("... topic could not be created/retrieved.", TAG);
       logger.error(`An exception was thrown: ${error}`, TAG);
