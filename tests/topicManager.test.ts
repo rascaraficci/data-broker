@@ -99,56 +99,9 @@ describe("TopicManager", () => {
     it("should not create a TopicManager - invalid service", () => {
       expect(() => new TopicManager("")).toThrow();
     });
-  });
 
-  describe("getConfigTopics", () => {
-    it("should get config - valid subject", () => {
-      expect.assertions(1);
 
-      topicManager.getConfigTopics("test").then((data) => {
-        expect(data).toBeDefined();
-      });
-    });
 
-    it("should not get config - invalid subject", () => {
-      expect(() => topicManager.getConfigTopics("")).toThrow();
-    });
-  });
-
-  describe("setConfigTopics", () => {
-    it("should set a topic config - valid subject", () => {
-      expect(() => topicManager.setConfigTopics("test", sampleConfig)).not.toThrow();
-    });
-
-    it("should not set a topic config - profiles could not be config", () => {
-      mockConfig.ClientWrapper.setConfig.mockImplementationOnce((key, val) => {
-        throw new Error("should throw");
-      });
-
-      const spyLoggerError = jest.spyOn(logger, "error");
-
-      expect(() => topicManager.setConfigTopics("test", sampleConfig)).not.toThrow();
-      // That's kinda ugly but seems to be the only way to test if the catch part was
-      // being called
-      expect(spyLoggerError).toHaveBeenCalled();
-    });
-
-    it("should not set a topic config - invalid subject", () => {
-      expect(() => topicManager.setConfigTopics("", sampleConfig)).toThrow();
-    });
-  });
-
-  describe("editConfigTopics", () => {
-    it("should edit a topic config", () => {
-      expect(() => topicManager.editConfigTopics("test", "special-user", sampleConfig)).not.toThrow();
-    });
-
-    it("should not edit a topic config - invalid subject", () => {
-      expect(() => topicManager.editConfigTopics("", "special-user", sampleConfig)).toThrow();
-    });
-
-    it("should not edit a topic config - invalid tenant", () => {
-      expect(() => topicManager.editConfigTopics("test", "", sampleConfig)).toThrow();
     });
   });
 
@@ -258,12 +211,6 @@ describe("TopicManager", () => {
       sampleConfig = { anotherService: {} };
       await stripped.handleRequest(testRequest);
       expect(mockConfig.KafkaProducer.createTopic).toHaveBeenCalledTimes(1);
-    });
-
-    it("should not handle a request - without data", async () => {
-      sampleConfig = undefined;
-      await stripped.handleRequest(testRequest);
-      expect(mockConfig.KafkaProducer.createTopic).not.toHaveBeenCalled();
     });
   });
 });
