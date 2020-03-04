@@ -125,22 +125,6 @@ class DataBroker {
 
     });
 
-    /**
-     * Setting profiles end point
-     */
-    this.app.post("/topic/:subject/profile", (req: IAuthRequest, response: express.Response) => {
-      logger.debug(`Received a POST request in /topic/${req.params.subject}/profile.`, TAG);
-      if (req.service === undefined) {
-        logger.error("Service is not defined in POST request headers.", TAG);
-        response.status(401).send({ error: "Missing service in POST request header" });
-      } else {
-        const topics = TopicManagerBuilder.get(req.service);
-        topics.setConfigTopics(req.params.subject, req.body);
-      }
-
-      response.status(200).send({ message: "Configs set successfully" });
-    });
-
   }
   protected registerSocketIOEndpoints() {
 
