@@ -117,18 +117,14 @@ describe("TopicManager", () => {
     });
   });
 
-  describe("getCreateTopic", () => {
-    const testCallback = jest.fn((error?: any, topic?: string | undefined) => {
-      if (error) {
-        throw new Error(error);
-      }
-    });
+  describe("createTopic", () => {
+    const testCallback = jest.fn();
     const testSubject: string = "testSubject";
 
     it("should create a topic", async () => {
       callbackError = undefined;
       callbackData = "testData";
-      expect(() => topicManager.getCreateTopic(testSubject, testCallback)).not.toThrow();
+      expect(() => topicManager.createTopic(testSubject, testCallback)).not.toThrow();
     });
 
     it("should add a pending request to the queue", () => {
@@ -138,17 +134,23 @@ describe("TopicManager", () => {
       stripped = (topicManager as any);
       stripped.producerReady = false;
       const beforeLength = stripped.topicQueue.length;
-      expect(() => stripped.getCreateTopic(testSubject, testCallback)).not.toThrow();
+      expect(() => stripped.createTopic(testSubject, testCallback)).not.toThrow();
       const afterLength = stripped.topicQueue.length;
       // If producer is not ready, it will queue the requests, so we need to check whether
       // the length of the list has changed by one
       expect(beforeLength).toEqual(afterLength - 1);
     });
 
-    it("should not create a topic - callback receives an error", async () => {
+    it("should not create a topic - exception thrown", () => {
       callbackError = "testError";
       callbackData = undefined;
-      expect(() => topicManager.getCreateTopic(testSubject, testCallback)).toThrow();
+
+      stripped = topicManager as any;
+      stripped.handleRequest = jest.fn(() => { throw new Error() });
+
+      topicManager.createTopic(testSubject, testCallback);
+
+      expect(testCallback).toBeCalledTimes(1);
     });
   });
 
