@@ -137,25 +137,17 @@ class TopicManager {
     return this.service + "." + subject;
   }
 
+  /**
+   * Create the topic for a request.
+   * @param request
+   */
   private handleRequest(request: QueuedTopic) {
     const profileConfigs: IAutoScheme = {
       num_partitions: kafka.numPartitions,
       replication_factor: kafka.replicationFactor,
     };
 
-    const genericService: string = "*";
-    this.redis.getConfig(request.subject).then((data: any) => {
-      if (data !== undefined) {
-        if (data.hasOwnProperty(this.service)) {
-          profileConfigs.num_partitions = data[this.service].num_partitions;
-          profileConfigs.replication_factor = data[this.service].replication_factor;
-        } else if (data.hasOwnProperty("*")) {
-          profileConfigs.num_partitions = data[genericService].num_partitions;
-          profileConfigs.replication_factor = data[genericService].replication_factor;
-        }
-        this.producer.createTopic(request.topic, profileConfigs, request.callback);
-      }
-    });
+    this.producer.createTopic(request.topic, profileConfigs, request.callback);
   }
 }
 
