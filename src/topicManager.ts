@@ -106,15 +106,22 @@ class TopicManager {
     }
   }
 
-  public destroy() {
+  /**
+   * Close the producer connection.
+   */
+  public destroy(): void {
     logger.debug("Closing down this topic manager...", TAG);
     this.producer.close();
     logger.debug("... topic manager was closed.", TAG);
   }
 
-  private assertTopic(topicid: string, message: string): void {
-    if ((topicid === undefined) || topicid.length === 0) {
-      throw new Error(message);
+  /**
+   * Verify the validity of the passed topic.
+   * @param topic
+   */
+  private assertTopic(topic: string): void {
+    if ((topic === undefined) || topic.length === 0) {
+      throw new Error("a valid subject must be provided");
     }
   }
 
