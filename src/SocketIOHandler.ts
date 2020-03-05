@@ -147,10 +147,7 @@ class SocketIOHandler {
     try {
       data = JSON.parse(message);
     } catch (err) {
-      if (err instanceof TypeError) {
-        logger.debug("... message payload was not successfully parsed.", TAG);
-        logger.error(`Received data is not a valid event: ${message}`, TAG);
-      } else if (err instanceof SyntaxError) {
+      if (err instanceof SyntaxError) {
         logger.debug("... message payload was not successfully parsed.", TAG);
         logger.error(`Failed to parse event as JSON: ${message}`, TAG);
       }
@@ -190,10 +187,7 @@ class SocketIOHandler {
     try {
       data = JSON.parse(message);
     } catch (err) {
-      if (err instanceof TypeError) {
-        logger.debug("... actuator message payload was not successfully parsed.", TAG);
-        logger.error(`Received data is not a valid event: ${message}`, TAG);
-      } else if (err instanceof SyntaxError) {
+      if (err instanceof SyntaxError) {
         logger.debug("... actuator message payload was not successfully parsed.", TAG);
         logger.error(`Failed to parse event as JSON: ${message}`, TAG);
       }
