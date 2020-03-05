@@ -42,6 +42,14 @@ describe("RedisClientWrapper", () => {
     clientWrapper = new ClientWrapper(redisStub as any);
   });
 
+  describe("constructor", () => {
+    it("should build a ClientWrapper instance", () => {
+      const stripped = clientWrapper as any;
+      expect(clientWrapper.client).toBeDefined();
+      expect(stripped.cb).toBeDefined();
+    });
+  });
+
   describe("runScript", () => {
     const testPath: string = "testPath";
     const testKeys: string[] = ["testKey1", "testKey2"];
