@@ -5,6 +5,7 @@ import { logger } from "@dojot/dojot-module-logger";
 import crypto = require("crypto");
 import fs = require("fs");
 import redis = require("redis");
+import util = require("util");
 
 const TAG = { filename: "RedisClient" };
 
@@ -27,9 +28,11 @@ export interface ITopicProfile {
  */
 class ClientWrapper {
   public client: redis.RedisClient;
+  private cb: (error: any, data: any) => void;
 
   constructor(client: redis.RedisClient) {
     this.client = client;
+    this.cb = () => { return; };
   }
 
   /**
@@ -43,31 +46,24 @@ class ClientWrapper {
   public runScript(path: string, keys: string[], vals: string[], callback: (error: any, data: any) => void) {
     const script = fs.readFileSync(path, { encoding: "utf-8" });
     const sha1 = crypto.createHash("sha1").update(script).digest("hex");
-
-    const evalshaCallback = (err: any, data: any) => {
-      if (err) {
-        logger.error(`Error while trying to execute the script: ${err}`, TAG);
-        callback(err, undefined);
-      } else {
-        callback(undefined, data);
-      }
-    };
+    this.cb = callback;
+    const evalshaCallbackBind = this.evalshaCallback.bind(this);
 
     const evalOrLoadCallback = (err: any, data: any) => {
       if (err) {
-        logger.debug(`Error while trying to run the script: ${err}`, TAG);
+        logger.debug(`Error while trying to run the script: ${util.inspect(err)}`, TAG);
         if (err.code === "NOSCRIPT") {
           this.client.script("load", script, () => {
             if (vals && (vals.length > 0)) {
               this.client.select(0);
-              this.client.evalsha(sha1, keys.length, keys[0], vals[0], evalshaCallback);
+              this.client.evalsha(sha1, keys.length, keys[0], vals[0], evalshaCallbackBind);
             } else {
-              this.client.evalsha(sha1, keys.length, keys[0], evalshaCallback);
+              this.client.evalsha(sha1, keys.length, keys[0], evalshaCallbackBind);
             }
           });
         }
       } else {
-        callback(undefined, data);
+        this.cb(undefined, data);
       }
     };
 
@@ -76,6 +72,15 @@ class ClientWrapper {
       this.client.evalsha(sha1, keys.length, keys[0], vals[0], evalOrLoadCallback);
     } else {
       this.client.evalsha(sha1, keys.length, keys[0], evalOrLoadCallback);
+    }
+  }
+
+  private evalshaCallback(err: any, data: any) {
+    if (err) {
+      logger.error(`Error while trying to execute the script: ${util.inspect(err)}`, TAG);
+      this.cb(err, undefined);
+    } else {
+      this.cb(undefined, data);
     }
   }
 }
