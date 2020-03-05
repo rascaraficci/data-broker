@@ -108,4 +108,28 @@ describe("RedisClientWrapper", () => {
       expect(testCallback).toHaveBeenCalled();
     });
   });
+
+  describe("evalshaCallback", () => {
+    it("should have an error", () => {
+      const stripped = clientWrapper as any;
+      stripped.cb = jest.fn();
+
+      const testError = new Error();
+
+      stripped.evalshaCallback(testError, undefined);
+
+      expect(stripped.cb).toBeCalledWith(testError, undefined);
+    });
+
+    it("should not have an error", () => {
+      const stripped = clientWrapper as any;
+      stripped.cb = jest.fn();
+
+      const testData = {}
+
+      stripped.evalshaCallback(undefined, testData);
+
+      expect(stripped.cb).toBeCalledWith(undefined, testData);
+    });
+  });
 });
