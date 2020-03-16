@@ -174,13 +174,17 @@ class DataBroker {
      */
     this.app.get("/socketio", (req: IAuthRequest, response: express.Response) => {
       logger.debug("Received a request for a new socketIO connection in /socketio.", TAG);
-      if (req.service === undefined) {
+      if (req.service === undefined ) {
         logger.error("Service is not defined in SocketIO connection request headers.", TAG);
-        response.status(401);
-        response.send({ error: "Missing service in GET request header" });
+        response.status(401).send({ error: "Missing service in GET request header" });
       } else {
-        const token = SocketIOSingleton.getInstance().getToken(req.service);
+        if (this.sioHandler) {
+        const token = this.sioHandler.getToken(req.service);
         response.status(200).send({ token });
+        } else {
+        logger.error("SocketIO Handler is not initialized.", TAG);
+        response.status(500).send({ error: "SocketIO handler is not initialized" });
+        }
       }
     });
 
