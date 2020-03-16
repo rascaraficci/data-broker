@@ -2,8 +2,10 @@
 
 import { Messenger } from "@dojot/dojot-module";
 import "jest";
+import http = require("http");
 import { Callback } from "redis";
 import { SocketIOHandler } from "../src/SocketIOHandler";
+import { logger } from "@dojot/dojot-module-logger";
 
 /**
  * Variables
@@ -67,8 +69,6 @@ const mockConfig = {
     join: jest.fn(),
     on: jest.fn(),
   },
-
-  httpServer: jest.fn(),
 };
 
 /**
@@ -102,187 +102,305 @@ jest.mock("../src/topicManager", () => ({
 
 describe("SocketIOHandler", () => {
   const messengerName = "testMessenger";
+  const testEvent = "sample-event";
   const testTenant = "sample-tenant";
   const testToken = "sample-uuid";
   const testSubject = "device-data";
   const testTopic = "sample-topic";
   const testError = "generic-error";
   const testKey = `si:${testToken}`;
-  const testSuccess =  "sample-success";
-  const testFailure =  "sample-failure";
+  const testSuccess = "sample-success";
+  const testFailure = "sample-failure";
+  const testCallbackId = "sample-callback-id";
 
-  let obj: SocketIOHandler;
+  let handler: SocketIOHandler;
+  let stripped: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    obj = new SocketIOHandler(mockConfig.httpServer, new Messenger(messengerName));
+    handler = new SocketIOHandler(new http.Server(), new Messenger(messengerName));
+    stripped = handler as any;
   });
 
-  it("should build an empty handler", (done) => {
-    mockConfig.Messenger.init.mockReturnValue(Promise.reject("reasons"));
-    process.kill = jest.fn(() => {
-      // Avoid application crash!
+  describe("constructor", () => {
+    it("should build an empty handler", (done) => {
+      process.kill = jest.fn(() => {
+        // Avoid application crash!
+      });
+      expect(handler).toBeDefined();
+      expect(mockConfig.socketIO.use).toBeCalled();
+      expect(mockConfig.socketIO.on).toHaveBeenCalledTimes(1);
+      const connectEvent = mockConfig.socketIO.on.mock.calls[0][0];
+      expect(connectEvent).toEqual("connection");
+
+      done();
     });
-    obj.processNewSocketIo = jest.fn();
-    expect(obj).toBeDefined();
-    expect(mockConfig.socketIO.use).toBeCalled();
-    expect(mockConfig.socketIO.on).toHaveBeenCalledTimes(1);
-    const [event, ioCbk] = mockConfig.socketIO.on.mock.calls[0];
-    expect(event).toEqual("connection");
 
-    // Running ioserver callback
-    ioCbk(mockConfig.socketSample);
-    expect(mockConfig.ClientWrapper.runScript).toBeCalledTimes(1);
-    const [script, keys, vals, redisCbk] = mockConfig.ClientWrapper.runScript.mock.calls[0];
-    expect(script).toEqual(expect.stringContaining("/lua/setDel.lua"));
-    expect(keys).toEqual(["si:sample-token"]);
-    expect(vals).toEqual([]);
+    it("should successfully run the SocketIO connection callback", (done) => {
+      const connectCallback = mockConfig.socketIO.on.mock.calls[0][1];
 
-    // Testing redis callbacks
-    redisCbk(null, "sample-tenant");
-    expect(obj.processNewSocketIo).toHaveBeenCalled();
-    redisCbk("error", "sample-tenant");
-    expect(mockConfig.socketSample.disconnect).toBeCalledTimes(1);
-    done();
+      // Running SocketIO connection callback
+      connectCallback(mockConfig.socketSample);
+
+      const disconnectEvent = mockConfig.socketSample.on.mock.calls[0][0];
+      expect(disconnectEvent).toEqual("disconnect");
+      expect(mockConfig.ClientWrapper.runScript).toBeCalledTimes(1);
+      const [script, keys, vals, _redisCbk] = mockConfig.ClientWrapper.runScript.mock.calls[0];
+      expect(script).toEqual(expect.stringContaining("/lua/setDel.lua"));
+      expect(keys).toEqual(["si:sample-token"]);
+      expect(vals).toEqual([]);
+
+      done();
+    });
+
+    it("should successfully run the socket disconnection callback", (done) => {
+      stripped.removeCallbacks = jest.fn();
+      const connectCallback = mockConfig.socketIO.on.mock.calls[0][1];
+
+      connectCallback(mockConfig.socketSample);
+      const disconnectCallback = mockConfig.socketSample.on.mock.calls[0][1];
+
+      // Running the socket disconnection callback
+      disconnectCallback();
+
+      expect(stripped.removeCallbacks).toBeCalledTimes(1);
+
+      done();
+    });
+
+    it("should successfully run the Redis callback", (done) => {
+      handler.processNewSocketIo = jest.fn();
+
+      // Running SocketIO connection callback
+      const connectCallback = mockConfig.socketIO.on.mock.calls[0][1];
+      connectCallback(mockConfig.socketSample);
+
+      // Retrieve runScript callback
+      const redisCbk = mockConfig.ClientWrapper.runScript.mock.calls[0][3];
+      expect(mockConfig.ClientWrapper.runScript).toBeCalledTimes(1);
+
+      redisCbk(null, "sample-tenant");
+      expect(handler.processNewSocketIo).toHaveBeenCalled();
+      // redisCbk("error", "sample-tenant");
+      // expect(mockConfig.socketSample.disconnect).toBeCalledTimes(1);
+      done();
+    });
+
+    it("should fail when running the Redis callback", (done) => {
+      handler.processNewSocketIo = jest.fn();
+
+      // Running SocketIO connection callback
+      const connectCallback = mockConfig.socketIO.on.mock.calls[0][1];
+      connectCallback(mockConfig.socketSample);
+
+      // Retrieve runScript callback
+      const redisCbk = mockConfig.ClientWrapper.runScript.mock.calls[0][3];
+      expect(mockConfig.ClientWrapper.runScript).toBeCalledTimes(1);
+
+      redisCbk("error", "sample-tenant");
+      expect(mockConfig.socketSample.disconnect).toBeCalledTimes(1);
+      done();
+    });
   });
 
-  it("should process a new regular socket.io connection", () => {
-    obj.registerSocketIoNotification = jest.fn();
-    mockConfig.socketSample.handshake.query.subject = "sample-subject";
-    obj.processNewSocketIo(mockConfig.socketSample as any, "sample-tenant");
-    expect(mockConfig.socketSample.join).toHaveBeenCalled();
-    expect(obj.registerSocketIoNotification).not.toHaveBeenCalled();
+  describe("processNewSocketIo", () => {
+    it("should process a new regular socket.io connection", () => {
+      handler.registerSocketIoNotification = jest.fn();
+      mockConfig.socketSample.handshake.query.subject = "sample-subject";
+      handler.processNewSocketIo(mockConfig.socketSample as any, "sample-tenant");
+      expect(mockConfig.socketSample.join).toHaveBeenCalled();
+      expect(handler.registerSocketIoNotification).not.toHaveBeenCalled();
+    });
+
+    it("should process a new notification socket.io connection", () => {
+      handler.registerSocketIoNotification = jest.fn();
+      mockConfig.socketSample.handshake.query.subject = "dojot.notifications";
+      handler.processNewSocketIo(mockConfig.socketSample as any, "sample-tenant");
+      expect(mockConfig.socketSample.join).not.toHaveBeenCalled();
+      expect(handler.registerSocketIoNotification).toHaveBeenCalled();
+    });
   });
 
-  it("should process a new notification socket.io connection", () => {
-    obj.registerSocketIoNotification = jest.fn();
-    mockConfig.socketSample.handshake.query.subject = "dojot.notifications";
-    obj.processNewSocketIo(mockConfig.socketSample as any, "sample-tenant");
-    expect(mockConfig.socketSample.join).not.toHaveBeenCalled();
-    expect(obj.registerSocketIoNotification).toHaveBeenCalled();
-  });
+  describe("registerSocketIoNotification", () => {
+    it("should register a new SocketIO notification connection", () => {
+      stripped.registerCallback = jest.fn();
 
-  it("should register a new notification socket.io connection", () => {
-    mockConfig.FilterManager.checkFilter.mockReturnValue(true);
-    obj.registerSocketIoNotification(mockConfig.socketSample as any, "sample-tenant");
-    expect(mockConfig.Messenger.on).toHaveBeenCalled();
-    const [subject, event, onCbk] = mockConfig.Messenger.on.mock.calls[2];
-    expect(subject).toEqual("dojot.notifications");
-    expect(event).toEqual("message");
-    onCbk("sample-tenant", "sample-msg");
-    expect(mockConfig.FilterManager.checkFilter).toBeCalled();
-    expect(mockConfig.socketSample.emit).toHaveBeenCalled();
+      handler.registerSocketIoNotification(mockConfig.socketSample as any, "sample-tenant");
 
-    let [sioEvent, sioCbk] = mockConfig.socketSample.on.mock.calls[0];
-    expect(sioEvent).toEqual("filter");
-    sioCbk("{}");
-    expect(mockConfig.FilterManager.update).toHaveBeenCalled();
+      const [subject, event, _onCbk] = stripped.registerCallback.mock.calls[0];
+      expect(subject).toEqual("dojot.notifications");
+      expect(event).toEqual("message");
+    });
 
-    [sioEvent, sioCbk] = mockConfig.socketSample.on.mock.calls[1];
-    expect(sioEvent).toEqual("disconnect");
-    sioCbk();
-    expect(
-      mockConfig.Messenger.unregisterCallback,
-    ).toHaveBeenCalledWith(
-      "dojot.notifications",
-      "message",
-      mockConfig.socketSample.id,
-    );
+    it("should successfully run the registerCallback callback", () => {
+      mockConfig.FilterManager.checkFilter.mockReturnValue(true);
+      stripped.registerCallback = jest.fn();
 
-    // Clearing mocks for alternate unit tests
-    // "Publishing" messages in different tenant
-    mockConfig.socketSample.emit.mockClear();
-    mockConfig.FilterManager.checkFilter.mockClear();
-    onCbk("sample-tenant-2", "sample-msg");
-    expect(mockConfig.FilterManager.checkFilter).not.toHaveBeenCalled();
-    expect(mockConfig.socketSample.emit).not.toHaveBeenCalled();
+      handler.registerSocketIoNotification(mockConfig.socketSample as any, "sample-tenant");
 
-    mockConfig.socketSample.emit.mockClear();
-    mockConfig.FilterManager.checkFilter.mockClear();
+      const [_subject, _event, onCbk] = stripped.registerCallback.mock.calls[0];
+      onCbk("sample-tenant", "sample-msg");
+      expect(mockConfig.FilterManager.checkFilter).toBeCalled();
+      expect(mockConfig.socketSample.emit).toHaveBeenCalled();
+    });
 
-    // Publishing messages that do not match any filter.
-    mockConfig.FilterManager.checkFilter.mockReturnValue(false);
-    onCbk("sample-tenant", "sample-msg");
-    expect(mockConfig.FilterManager.checkFilter).toHaveBeenCalled();
-    expect(mockConfig.socketSample.emit).not.toHaveBeenCalled();
-  });
+    it("should not emit a message to notification because filter does not apply to it", () => {
+      mockConfig.FilterManager.checkFilter.mockReturnValue(false);
+      stripped.registerCallback = jest.fn();
 
-  it("should register a new actuator socket.io connection", () => {
-    mockConfig.socketSample.handshake.query.subject = "dojot.device-manager.device";
-    obj.processNewSocketIo(mockConfig.socketSample as any, "sample-tenant");
-    expect(mockConfig.socketSample.join).toBeCalled();
+      handler.registerSocketIoNotification(mockConfig.socketSample as any, "sample-tenant");
 
-    expect(mockConfig.Messenger.on).toHaveBeenCalled();
-    const [subject, event, onCbk] = mockConfig.Messenger.on.mock.calls[1];
-    expect(subject).toEqual("dojot.device-manager.device");
-    expect(event).toEqual("message");
-    onCbk("sample-tenant", JSON.stringify({
-      data: {
-        attrs: {
-          target_temperature: 23.5,
+      const [_subject, _event, onCbk] = stripped.registerCallback.mock.calls[0];
+      onCbk("sample-tenant", "sample-msg");
+      expect(mockConfig.FilterManager.checkFilter).toBeCalled();
+      expect(mockConfig.socketSample.emit).not.toHaveBeenCalled();
+    });
+
+    it("should not emit message because the tenant is not the right one", () => {
+      mockConfig.FilterManager.checkFilter.mockReturnValue(true);
+      stripped.registerCallback = jest.fn();
+
+      handler.registerSocketIoNotification(mockConfig.socketSample as any, "sample-tenant");
+
+      const [_subject, _event, onCbk] = stripped.registerCallback.mock.calls[0];
+      onCbk("sample-tenant-2", "sample-msg");
+      expect(mockConfig.FilterManager.checkFilter).not.toHaveBeenCalled();
+      expect(mockConfig.socketSample.emit).not.toHaveBeenCalled();
+    });
+
+    it("should successfully call the SocketIO callback with a filter", () => {
+      mockConfig.FilterManager.update = jest.fn();
+
+      handler.registerSocketIoNotification(mockConfig.socketSample as any, "sample-tenant");
+
+      expect(mockConfig.socketSample.on).toHaveBeenCalled();
+
+      const [event, sioCallback] = mockConfig.socketSample.on.mock.calls[0];
+      expect(event).toBe("filter");
+
+      const filter = JSON.stringify({
+        data: {
+          attrs: {
+            target_temperature: 23.5,
+          },
+          id: "efac",
         },
-        id: "efac",
-      },
-      event: "configure",
-      meta: {
-        service: "sample-tenant",
-        timestamp: 0,
-      },
-    }));
+        event: "configure",
+        meta: {
+          service: "sample-tenant",
+          timestamp: 0,
+        },
+      });
 
-    expect(mockConfig.FilterManager.checkFilter).not.toBeCalled();
-    expect(mockConfig.socketIO.to).toBeCalled();
+      sioCallback(filter);
 
+      const [filterJson, socketId] = mockConfig.FilterManager.update.mock.calls[0];
+      expect(filterJson).toEqual(JSON.parse(filter));
+      expect(socketId).toBe(mockConfig.socketSample.id);
+    });
   });
 
-  it("should register a new device-data socket.io connection", () => {
-    mockConfig.socketSample.handshake.query.subject = "device-data";
-    obj.processNewSocketIo(mockConfig.socketSample as any, "sample-tenant");
-    expect(mockConfig.socketSample.join).toBeCalled();
+  describe("getToken", () => {
+    let token: string;
 
-    expect(mockConfig.Messenger.on).toHaveBeenCalled();
-    const [subject, event, onCbk] = mockConfig.Messenger.on.mock.calls[0];
-    expect(subject).toEqual("device-data");
-    expect(event).toEqual("message");
-    onCbk("sample-tenant", JSON.stringify({
-      attrs: {
-        humidity: 60,
-      },
-      metadata: {
-        deviceid: "c6ea4b",
-        tenant: "admin",
-        timestamp: 1528226137452,
-      },
-    }));
+    beforeEach(() => {
+      logger.error = jest.fn();
+      token = handler.getToken(testTenant);
+    });
 
-    expect(mockConfig.FilterManager.checkFilter).not.toBeCalled();
-    expect(mockConfig.socketIO.to).toBeCalled();
+    it("should return a correct token", () => {
+      expect(mockConfig.TopicManager.getCreateTopic).toBeCalledTimes(1);
 
+      // Retrieve redis calls
+      expect(mockConfig.ClientWrapper.client.setex).toBeCalledTimes(1);
+      const [key, time, tenant] = mockConfig.ClientWrapper.client.setex.mock.calls[0];
+      expect(key).toEqual(testKey);
+      expect(time).toEqual(60);
+      expect(tenant).toEqual(testTenant);
+
+      expect(token).toEqual(testToken);
+    });
+
+    it("should call getCreateTopic callback successfuly", (done) => {
+      // Retrieve getCreateTopic call
+      const [subject, callback] = mockConfig.TopicManager.getCreateTopic.mock.calls[0];
+      expect(subject).toEqual(testSubject);
+
+      callback(undefined, testTopic);
+
+      expect(logger.error).not.toHaveBeenCalled();
+
+      done();
+    });
+
+    it("should call getCreateTopic callback with error", () => {
+      // Retrieve getCreateTopic call
+      const [_subject, callback] = mockConfig.TopicManager.getCreateTopic.mock.calls[0];
+
+      callback(testError);
+
+      expect(logger.error).toHaveBeenCalled();
+    });
   });
 
-  it("should get a token", (done) => {
-    const token = obj.getToken(testTenant);
+  describe("registerCallback", () => {
+    it("should register a callback for a subject that is not already registered", () => {
+      stripped.registeredCallbacks.get = jest.fn(() => { return undefined });
+      stripped.registeredCallbacks.set = jest.fn();
+      mockConfig.Messenger.on = jest.fn(() => { return "sample-callback-id" });
 
-    expect(token).toEqual(testToken);
+      stripped.registerCallback(testSubject, testEvent, jest.fn(), testToken);
 
-    // Retrieve getCreateTopic call
-    expect(mockConfig.TopicManager.getCreateTopic).toBeCalledTimes(1);
-    const [subject, cbk] = mockConfig.TopicManager.getCreateTopic.mock.calls[0];
-    expect(subject).toEqual(testSubject);
+      expect(stripped.registeredCallbacks.get).toHaveBeenCalledWith(testSubject);
+      expect(stripped.registeredCallbacks.get).toReturnWith(undefined);
+      expect(mockConfig.Messenger.on).toHaveBeenCalledWith(testSubject, testEvent, expect.any(Function));
+      expect(mockConfig.Messenger.on).toReturnWith("sample-callback-id");
+      expect(stripped.registeredCallbacks.set).toHaveBeenCalledWith(
+        testSubject,
+        { event: testEvent, callbackId: "sample-callback-id", token: testToken });
+    });
 
-    // Calling callback when the topic is retrieved
-    cbk(undefined, testTopic);
+    it("should not register a callback for a subject that is already registered", () => {
+      stripped.registeredCallbacks.get = jest.fn(() => { return {} });
+      stripped.registeredCallbacks.set = jest.fn();
+      logger.debug = jest.fn();
 
-    // Calling callback when the topic is retrieved
-    cbk(testError);
+      stripped.registerCallback(testSubject, testEvent, jest.fn(), testToken);
 
-    // Retrieve redis calls
-    expect(mockConfig.ClientWrapper.client.setex).toBeCalledTimes(1);
-    const [key, time, tenant] = mockConfig.ClientWrapper.client.setex.mock.calls[0];
-    expect(key).toEqual(testKey);
-    expect(time).toEqual(60);
-    expect(tenant).toEqual(testTenant);
-    done();
+      expect(stripped.registeredCallbacks.get).toHaveBeenCalledWith(testSubject);
+      expect(stripped.registeredCallbacks.get).toReturnWith(expect.anything());
+      expect(mockConfig.Messenger.on).not.toHaveBeenCalled();
+      expect(stripped.registeredCallbacks.set).not.toHaveBeenCalled();
+      expect(logger.debug).toHaveBeenCalled();
+    });
+  });
+
+  describe("removeCallbacks", () => {
+    it("should remove the registered callback", () => {
+      stripped.registeredCallbacks.forEach = jest.fn();
+      stripped.registeredCallbacks.delete = jest.fn();
+
+      stripped.removeCallbacks(testToken);
+
+      expect(stripped.registeredCallbacks.forEach).toHaveBeenCalled();
+      const [ callback ] = stripped.registeredCallbacks.forEach.mock.calls[0];
+      callback({ event: testEvent, callbackId: testCallbackId, token: testToken }, testSubject);
+      expect(mockConfig.Messenger.unregisterCallback).toHaveBeenCalledWith(testSubject, testEvent, testCallbackId);
+      expect(stripped.registeredCallbacks.delete).toHaveBeenCalledWith(testSubject);
+    });
+
+    it("should not remove the registered callback that does not have a matching token", () => {
+      stripped.registeredCallbacks.forEach = jest.fn();
+      stripped.registeredCallbacks.delete = jest.fn();
+
+      stripped.removeCallbacks(testToken);
+
+      expect(stripped.registeredCallbacks.forEach).toHaveBeenCalled();
+      const [ callback ] = stripped.registeredCallbacks.forEach.mock.calls[0];
+      callback({ event: testEvent, callbackId: testCallbackId, token: testToken + "-1" }, testSubject);
+      expect(mockConfig.Messenger.unregisterCallback).not.toHaveBeenCalled();
+      expect(stripped.registeredCallbacks.delete).not.toHaveBeenCalled();
+    });
   });
 
   describe("handleMessage", () => {
@@ -290,7 +408,7 @@ describe("SocketIOHandler", () => {
     let testMessage: any;
 
     beforeEach(() => {
-      stripped = (obj as any);
+      stripped = (handler as any);
       testMessage = undefined;
     });
 
@@ -351,7 +469,7 @@ describe("SocketIOHandler", () => {
     let testMessage: any;
 
     beforeEach(() => {
-      stripped = (obj as any);
+      stripped = (handler as any);
       testMessage = undefined;
     });
 
@@ -522,7 +640,7 @@ describe("SocketIOHandler", () => {
     let socket: any;
 
     beforeEach(() => {
-      stripped = (obj as any);
+      stripped = (handler as any);
       socket = undefined;
     });
 
