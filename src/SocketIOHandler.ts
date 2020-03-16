@@ -138,6 +138,21 @@ class SocketIOHandler {
   }
 
   /**
+   * Register a callback in Kafka Messenger events.
+   * @param subject Kafka subject
+   * @param event
+   * @param callback callback to be registered for Kafka Messenger
+   * @param token the token returned by the Socket
+   */
+  private registerCallback(subject: string, event: string, cb: (ten: string, data: any) => void, token: string): void {
+    if (this.registeredCallbacks.get(subject) === undefined) {
+      const callbackId = this.messenger.on(subject, event, cb);
+      this.registeredCallbacks.set(subject, { event, callbackId, token });
+    } else {
+      logger.debug(`Callback for subject ${subject} already present, ignoring creation`, TAG);
+    }
+  }
+  /**
    * Callback function used to process messages received from Kafka library.
    * @param nsp SocketIO namespace to send out messages to all subscribers. These are tenants.
    * @param error Error received from Kafka library.
