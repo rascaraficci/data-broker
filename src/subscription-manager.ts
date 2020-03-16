@@ -74,7 +74,16 @@ class DataBroker {
     return messenger;
   }
 
-  protected registerTopicEndpoints() {
+  private initializeHealthChecker(messenger: Messenger) {
+    logger.debug("Initializing Healthcheck...", TAG);
+    const redis = RedisManager.getClient().client;
+    const healthChecker = new AgentHealthChecker(messenger, redis);
+    healthChecker.init();
+    this.app.use(healthChecker.router);
+    logger.debug("... healthcheck was successfully initialized.", TAG);
+  }
+
+  private registerTopicEndpoints() {
     /*
      * Topic registry endpoints
      */
