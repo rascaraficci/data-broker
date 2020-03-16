@@ -404,11 +404,9 @@ describe("SocketIOHandler", () => {
   });
 
   describe("handleMessage", () => {
-    let stripped: any;
     let testMessage: any;
 
     beforeEach(() => {
-      stripped = (handler as any);
       testMessage = undefined;
     });
 
@@ -465,11 +463,9 @@ describe("SocketIOHandler", () => {
   });
 
   describe("handleMessageActuator", () => {
-    let stripped: any;
     let testMessage: any;
 
     beforeEach(() => {
-      stripped = (handler as any);
       testMessage = undefined;
     });
 
@@ -636,11 +632,9 @@ describe("SocketIOHandler", () => {
       return testSuccess;
     });
 
-    let stripped: any;
     let socket: any;
 
     beforeEach(() => {
-      stripped = (handler as any);
       socket = undefined;
     });
 
