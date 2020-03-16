@@ -3,8 +3,11 @@
 
 import { Messenger } from "@dojot/dojot-module";
 import { logger } from "@dojot/dojot-module-logger";
-import sio = require("socket.io");
+
+import http = require("http");
+import sio from "socket.io";
 import uuid = require("uuid/v4");
+
 import { FilterManager } from "./FilterManager";
 import { RedisManager } from "./redisManager";
 import { TopicManagerBuilder } from "./TopicBuilder";
@@ -15,6 +18,12 @@ function getKey(token: string): string {
   return "si:" + token;
 }
 
+interface IRegisteredCallback {
+  event: string;
+  callbackId: string;
+  token: string;
+}
+
 /**
  * Class used to handle SocketIO operations
  */
@@ -22,30 +31,43 @@ class SocketIOHandler {
   private ioServer: SocketIO.Server;
   private messenger: Messenger;
   private fManager: FilterManager;
+  // Maintains a map of registered subjects with the data needed to unregister callbacks
+  private registeredCallbacks: Map<string, IRegisteredCallback>;
 
   /**
    * Constructor.
    * @param httpServer HTTP server as a basis to offer SocketIO connection
    */
-  constructor(httpServer: any, messenger: Messenger) {
+  constructor(httpServer: http.Server, messenger: Messenger) {
+    this.messenger = messenger;
+    this.fManager = new FilterManager();
+    this.registeredCallbacks = new Map<string, IRegisteredCallback>();
+
     logger.debug("Creating new SocketIO handler...", TAG);
 
     logger.debug("Creating sio server...", TAG);
     this.ioServer = sio(httpServer);
     logger.debug("... sio server was created.", TAG);
 
+    logger.debug("Configuring sio server...", TAG);
     this.ioServer.use(this.checkSocket);
+    logger.debug("... sio server was configured.", TAG);
 
     logger.debug("Registering SocketIO server callbacks...", TAG);
-
-    this.messenger = messenger;
-    this.messenger.on("device-data", "message", this.handleMessage.bind(this));
-    this.messenger.on("dojot.device-manager.device", "message", this.handleMessageActuator.bind(this));
-
-    this.fManager = new FilterManager();
-
     this.ioServer.on("connection", (socket: sio.Socket) => {
       logger.debug("Got new SocketIO connection", TAG);
+
+      logger.debug("Registering Messenger callbacks", TAG);
+      const token = socket.handshake.query.token;
+      this.registerCallback("device-data", "message", this.handleMessage.bind(this), token);
+      this.registerCallback("dojot.device-manager.device", "message", this.handleMessageActuator.bind(this), token);
+
+      logger.debug("Registering 'disconnect' callback", TAG);
+      socket.on("disconnect", () => {
+        logger.debug("Socket disconnected. Will unregister callbacks", TAG);
+        this.removeCallbacks(token);
+      });
+
       const redis = RedisManager.getClient();
       redis.runScript(
         __dirname + "/lua/setDel.lua",
@@ -85,23 +107,19 @@ class SocketIOHandler {
 
   public registerSocketIoNotification(socket: sio.Socket, tenant: string) {
     logger.debug("Received connection for dojot.notifications", TAG);
-    this.messenger.on("dojot.notifications", "message", (ten: string, msg: any) => {
+    this.registerCallback("dojot.notifications", "message", (ten: string, msg: any) => {
       logger.debug("Received dojot notification.", TAG);
       if (ten === tenant) {
         if (this.fManager.checkFilter(msg, socket.id)) {
           socket.emit("notification", msg);
         }
       }
-    }, socket.id);
+    }, socket.handshake.query.token);
 
     logger.debug("Will register new filter callback", TAG);
     socket.on("filter", (filter) => {
       logger.debug("Received new filter", TAG);
       this.fManager.update(JSON.parse(filter), socket.id);
-    });
-    socket.on("disconnect", () => {
-      logger.debug("Socket disconnected. Will unregister callback", TAG);
-      this.messenger.unregisterCallback("dojot.notifications", "message", socket.id);
     });
   }
 
