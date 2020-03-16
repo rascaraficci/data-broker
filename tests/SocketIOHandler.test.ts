@@ -181,8 +181,6 @@ describe("SocketIOHandler", () => {
 
       redisCbk(null, "sample-tenant");
       expect(handler.processNewSocketIo).toHaveBeenCalled();
-      // redisCbk("error", "sample-tenant");
-      // expect(mockConfig.socketSample.disconnect).toBeCalledTimes(1);
       done();
     });
 
