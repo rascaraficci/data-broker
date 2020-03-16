@@ -152,6 +152,23 @@ class SocketIOHandler {
       logger.debug(`Callback for subject ${subject} already present, ignoring creation`, TAG);
     }
   }
+
+  /**
+   * Stops Kafka messages consumption by removing the callbacks associated with it.
+   */
+  private removeCallbacks(token: string): void {
+    // logger.error(`eventCallbacks: ${util.inspect((this.messenger as any).eventCallbacks)}`, TAG);
+
+    // Unregistering the callbacks for this token
+    this.registeredCallbacks.forEach((register, subject) => {
+      if (register.token === token) {
+        this.messenger.unregisterCallback(subject, register.event, register.callbackId);
+        this.registeredCallbacks.delete(subject);
+        logger.debug(`Removed callback for subject ${subject}`, TAG);
+      }
+    });
+  }
+
   /**
    * Callback function used to process messages received from Kafka library.
    * @param nsp SocketIO namespace to send out messages to all subscribers. These are tenants.
