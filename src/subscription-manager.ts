@@ -1,25 +1,29 @@
 import { Messenger } from "@dojot/dojot-module";
 import { getHTTPRouter as getLoggerRouter, logger } from "@dojot/dojot-module-logger";
+
 import bodyParser = require("body-parser");
 import express = require("express");
 import http = require("http");
 import morgan = require("morgan");
 import util = require("util");
+
 import { authEnforce, authParse, IAuthRequest } from "./api/authMiddleware";
 import config = require("./config");
 import { AgentHealthChecker } from "./Healthcheck";
 import { ITopicProfile } from "./RedisClientWrapper";
 import { RedisManager } from "./redisManager";
-import { SocketIOSingleton } from "./socketIo";
+import { SocketIOHandler } from "./SocketIOHandler";
 import { TopicManagerBuilder } from "./TopicBuilder";
 
 const TAG = { filename: "SubscriptionManager" };
 
 class DataBroker {
   private app: express.Application;
+  private sioHandler: SocketIOHandler | undefined;
 
   constructor(app: express.Application) {
     this.app = app;
+    this.sioHandler = undefined;
   }
 
   public start() {
@@ -35,21 +39,14 @@ class DataBroker {
 
     const httpServer = http.createServer(this.app);
 
+    // Kafka Messenger
     logger.debug("Initializing Kafka messenger...", TAG);
-    this.initializeMessenger()
+    this.initializeMessenger("data-broker")
       .then((messenger: Messenger) => {
         logger.debug("... Kafka messenger successfully initialized.", TAG);
-        logger.debug("Initializing Healthcheck...", TAG);
-        const redis = RedisManager.getClient().client;
-        const healthChecker = new AgentHealthChecker(messenger, redis);
-        healthChecker.init();
-        this.app.use(healthChecker.router);
-        logger.debug("... healthcheck was successfully initialized.", TAG);
-        // make sure singleton is instantiated
-        logger.debug("Registering socket.io endpoints...", TAG);
-        SocketIOSingleton.getInstance(httpServer, messenger);
+        this.initializeHealthChecker(messenger);
+        this.sioHandler = new SocketIOHandler(httpServer, messenger);
         this.registerSocketIOEndpoints();
-        logger.debug("... socket.io endpoints were successfully registered.", TAG);
       })
       .catch((error: any) => {
         logger.error(`... Kafka messenger initialization failed. Error: ${error}`, TAG);
@@ -66,8 +63,8 @@ class DataBroker {
     logger.debug("... HTTP server startup requested.", TAG);
   }
 
-  protected async initializeMessenger() {
-    const messenger = new Messenger("data-broker-socketio");
+  private async initializeMessenger(name: string) {
+    const messenger = new Messenger(name);
     await messenger.init();
     return messenger;
   }
@@ -168,7 +165,8 @@ class DataBroker {
 
     });
   }
-  protected registerSocketIOEndpoints() {
+
+  private registerSocketIOEndpoints() {
     logger.debug("Registering socket.io endpoints...", TAG);
 
     /**
