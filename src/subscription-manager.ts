@@ -57,9 +57,7 @@ class DataBroker {
       });
     logger.debug("... Kafka messenger initialization requested.", TAG);
 
-    logger.debug("Registering common endpoints...", TAG);
     this.registerTopicEndpoints();
-    logger.debug("... common endpoints were registered.", TAG);
 
     logger.debug("Starting HTTP server...", TAG);
     httpServer.listen(config.service.port, () => {
@@ -84,6 +82,8 @@ class DataBroker {
   }
 
   private registerTopicEndpoints() {
+    logger.debug("Registering common endpoints...", TAG);
+
     /*
      * Topic registry endpoints
      */
@@ -169,6 +169,7 @@ class DataBroker {
     });
   }
   protected registerSocketIOEndpoints() {
+    logger.debug("Registering socket.io endpoints...", TAG);
 
     /**
      * SocketIO endpoint
@@ -184,6 +185,8 @@ class DataBroker {
         response.status(200).send({ token });
       }
     });
+
+    logger.debug("... socket.io endpoints were successfully registered.", TAG);
   }
 }
 
