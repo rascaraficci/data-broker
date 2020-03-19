@@ -51,7 +51,7 @@ const mockConfig = {
   },
 
   TopicManager: {
-    getCreateTopic: jest.fn(),
+    createTopic: jest.fn(),
   },
 
   socketSample: {
@@ -266,8 +266,8 @@ describe("SocketIOHandler", () => {
     expect(token).toEqual(testToken);
 
     // Retrieve getCreateTopic call
-    expect(mockConfig.TopicManager.getCreateTopic).toBeCalledTimes(1);
-    const [subject, cbk] = mockConfig.TopicManager.getCreateTopic.mock.calls[0];
+    expect(mockConfig.TopicManager.createTopic).toBeCalledTimes(1);
+    const [subject, cbk] = mockConfig.TopicManager.createTopic.mock.calls[0];
     expect(subject).toEqual(testSubject);
 
     // Calling callback when the topic is retrieved

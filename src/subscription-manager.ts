@@ -8,7 +8,6 @@ import util = require("util");
 import { authEnforce, authParse, IAuthRequest } from "./api/authMiddleware";
 import config = require("./config");
 import { AgentHealthChecker } from "./Healthcheck";
-import { ITopicProfile } from "./RedisClientWrapper";
 import { RedisManager } from "./redisManager";
 import { SocketIOSingleton } from "./socketIo";
 import { TopicManagerBuilder } from "./TopicBuilder";
@@ -88,7 +87,7 @@ class DataBroker {
       } else {
         const topics = TopicManagerBuilder.get(req.service);
         logger.debug(`Topic for service ${req.service} and subject ${req.params.subject}.`, TAG);
-        topics.getCreateTopic(req.params.subject, (error: any, data: any) => {
+        topics.createTopic(req.params.subject, (error: any, data: any) => {
           if (error) {
             logger.error(`Failed to process topic. Error is ${error}`, TAG);
             response.status(500);
@@ -98,65 +97,6 @@ class DataBroker {
           }
         });
       }
-    });
-
-    /**
-     * Getting profiles end point
-     */
-    this.app.get("/topic/:subject/profile", (req: IAuthRequest, response: express.Response) => {
-      logger.debug(`Received a GET request in /topic/${req.params.subject}/profile.`, TAG);
-
-      if (req.service === undefined) {
-        logger.error("Service is not defined in GET request headers.", TAG);
-        response.status(401).send({ error: "Missing service in GET request header" });
-      } else {
-        const topics = TopicManagerBuilder.get(req.service);
-        topics.getConfigTopics(req.params.subject).then((data: ITopicProfile | undefined) => {
-          if (data === undefined) {
-            logger.debug("Could not find profiles for this subject", TAG);
-            response.status(404).send({ message: "Could not find profiles for this subject" });
-          }
-          response.status(200).send(data);
-        }).catch((error: any) => {
-          logger.error(`Could not proccess the request. Error: ${error}`, TAG);
-          response.status(500).send({ message: "error", details: `${util.inspect(error, { depth: null })}` });
-        });
-      }
-
-    });
-
-    /**
-     * Setting profiles end point
-     */
-    this.app.post("/topic/:subject/profile", (req: IAuthRequest, response: express.Response) => {
-      logger.debug(`Received a POST request in /topic/${req.params.subject}/profile.`, TAG);
-      if (req.service === undefined) {
-        logger.error("Service is not defined in POST request headers.", TAG);
-        response.status(401).send({ error: "Missing service in POST request header" });
-      } else {
-        const topics = TopicManagerBuilder.get(req.service);
-        topics.setConfigTopics(req.params.subject, req.body);
-      }
-
-      response.status(200).send({ message: "Configs set successfully" });
-    });
-
-    /**
-     * Editing profiles end point
-     */
-    this.app.put("/topic/:subject/profile/:tenant", (req: IAuthRequest, response: express.Response) => {
-      logger.debug(`Received a PUT request in /topic/${req.params.subject}/profile/${req.params.tenant}`, TAG);
-
-      if (req.service === undefined) {
-        logger.error("Service is not defined in PUT request headers.", TAG);
-        response.status(401).send({ error: "Missing service in PUT request header" });
-      } else {
-        const topics = TopicManagerBuilder.get(req.service);
-        topics.setConfigTopics(req.params.subject, req.body);
-      }
-
-      response.status(200).send({ message: "Configs edited/created successfully" });
-
     });
   }
   protected registerSocketIOEndpoints() {

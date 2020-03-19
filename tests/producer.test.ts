@@ -2,6 +2,7 @@ import "jest";
 import { KafkaFactory } from "../src/KafkaFactory";
 import { KafkaProducer } from "../src/producer";
 import { IAutoScheme } from "../src/RedisClientWrapper";
+import { logger } from "@dojot/dojot-module-logger";
 
 jest.mock("kafka-node", () => ({
   HighLevelProducer: jest.fn(),
@@ -80,6 +81,32 @@ describe("Producer", () => {
       producer.send(message, topic);
       expect(stripped.producer.send).toHaveBeenCalledTimes(1);
     });
+
+    describe("callback", () => {
+      let cb: any;
+      beforeEach(() => {
+        producer.send(message, topic);
+        cb = stripped.producer.send.mock.calls[0][1]
+        // This mock should be made here because producer.send calls logger.debug too
+        logger.debug = jest.fn()
+      });
+
+      it("should send message", () => {
+        cb(undefined, "testData");
+        expect(logger.debug).toBeCalledTimes(2);
+      });
+
+      it("should send message - empty result", () => {
+        cb(undefined, undefined);
+        expect(logger.debug).toBeCalledTimes(1);
+      });
+
+      it("should not send message - callback error", () => {
+        cb(new Error("testError"), undefined);
+        expect(logger.debug).toBeCalledTimes(1);
+      });
+    });
+
   });
 
   describe("createTopics", () => {

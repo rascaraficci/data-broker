@@ -1,11 +1,13 @@
 /* jslint node: true */
 "use strict";
 
-import { logger } from "@dojot/dojot-module-logger";
-
 import "jest";
 import { KafkaFactory } from "../src/KafkaFactory";
 import { TopicManager } from "../src/topicManager";
+
+// Used to test the KafkaProducer callback
+type CallbackFunction = () => void;
+let kafkaProducerInit: undefined | CallbackFunction;
 
 /**
  * Mocks
@@ -17,6 +19,7 @@ jest.mock("../src/KafkaFactory", () => ({
 jest.mock("../src/producer", () => ({
   KafkaProducer: jest.fn((kafkaFactory: KafkaFactory, init: () => void) => {
     init();
+    kafkaProducerInit = init;
     return mockConfig.KafkaProducer;
   }),
 }));
@@ -99,71 +102,30 @@ describe("TopicManager", () => {
     it("should not create a TopicManager - invalid service", () => {
       expect(() => new TopicManager("")).toThrow();
     });
-  });
 
-  describe("getConfigTopics", () => {
-    it("should get config - valid subject", () => {
-      expect.assertions(1);
+    it("should call handleRequest inside the init function", () => {
+      if (kafkaProducerInit !== undefined) {
+        stripped = topicManager as any;
+        stripped.topicQueue = [{}];
+        stripped.handleRequest = jest.fn();
 
-      topicManager.getConfigTopics("test").then((data) => {
-        expect(data).toBeDefined();
-      });
-    });
+        kafkaProducerInit();
 
-    it("should not get config - invalid subject", () => {
-      expect(() => topicManager.getConfigTopics("")).toThrow();
-    });
-  });
-
-  describe("setConfigTopics", () => {
-    it("should set a topic config - valid subject", () => {
-      expect(() => topicManager.setConfigTopics("test", sampleConfig)).not.toThrow();
-    });
-
-    it("should not set a topic config - profiles could not be config", () => {
-      mockConfig.ClientWrapper.setConfig.mockImplementationOnce((key, val) => {
-        throw new Error("should throw");
-      });
-
-      const spyLoggerError = jest.spyOn(logger, "error");
-
-      expect(() => topicManager.setConfigTopics("test", sampleConfig)).not.toThrow();
-      // That's kinda ugly but seems to be the only way to test if the catch part was
-      // being called
-      expect(spyLoggerError).toHaveBeenCalled();
-    });
-
-    it("should not set a topic config - invalid subject", () => {
-      expect(() => topicManager.setConfigTopics("", sampleConfig)).toThrow();
-    });
-  });
-
-  describe("editConfigTopics", () => {
-    it("should edit a topic config", () => {
-      expect(() => topicManager.editConfigTopics("test", "special-user", sampleConfig)).not.toThrow();
-    });
-
-    it("should not edit a topic config - invalid subject", () => {
-      expect(() => topicManager.editConfigTopics("", "special-user", sampleConfig)).toThrow();
-    });
-
-    it("should not edit a topic config - invalid tenant", () => {
-      expect(() => topicManager.editConfigTopics("test", "", sampleConfig)).toThrow();
-    });
-  });
-
-  describe("getCreateTopic", () => {
-    const testCallback = jest.fn((error?: any, topic?: string | undefined) => {
-      if (error) {
-        throw new Error(error);
+        expect(stripped.handleRequest).toBeCalledTimes(1)
+      } else {
+        fail("init is undefined")
       }
     });
+  });
+
+  describe("createTopic", () => {
+    const testCallback = jest.fn();
     const testSubject: string = "testSubject";
 
     it("should create a topic", async () => {
       callbackError = undefined;
       callbackData = "testData";
-      expect(() => topicManager.getCreateTopic(testSubject, testCallback)).not.toThrow();
+      expect(() => topicManager.createTopic(testSubject, testCallback)).not.toThrow();
     });
 
     it("should add a pending request to the queue", () => {
@@ -173,17 +135,23 @@ describe("TopicManager", () => {
       stripped = (topicManager as any);
       stripped.producerReady = false;
       const beforeLength = stripped.topicQueue.length;
-      expect(() => stripped.getCreateTopic(testSubject, testCallback)).not.toThrow();
+      expect(() => stripped.createTopic(testSubject, testCallback)).not.toThrow();
       const afterLength = stripped.topicQueue.length;
       // If producer is not ready, it will queue the requests, so we need to check whether
       // the length of the list has changed by one
       expect(beforeLength).toEqual(afterLength - 1);
     });
 
-    it("should not create a topic - callback receives an error", async () => {
+    it("should not create a topic - exception thrown", () => {
       callbackError = "testError";
       callbackData = undefined;
-      expect(() => topicManager.getCreateTopic(testSubject, testCallback)).toThrow();
+
+      stripped = topicManager as any;
+      stripped.handleRequest = jest.fn(() => { throw new Error() });
+
+      topicManager.createTopic(testSubject, testCallback);
+
+      expect(testCallback).toBeCalledTimes(1);
     });
   });
 
@@ -201,18 +169,18 @@ describe("TopicManager", () => {
     });
   });
 
-  describe("parseKey", () => {
+  describe("createTopicName", () => {
     beforeEach(() => {
       stripped = (topicManager as any);
     });
 
-    it("should create the key", () => {
+    it("should create the topic name", () => {
       const testSubject = "testSubject";
-      expect(stripped.parseKey(testSubject)).toEqual(`ti:${testService}:${testSubject}`);
+      expect(stripped.createTopicName(testSubject)).toEqual(`${testService}.${testSubject}`);
     });
 
-    it("should not create the key", () => {
-      expect(() => stripped.parseKey("")).toThrow();
+    it("should not create the topic name", () => {
+      expect(() => stripped.createTopicName("")).toThrow();
     });
   });
 
@@ -243,27 +211,21 @@ describe("TopicManager", () => {
       sampleConfig = originalSampleConfig;
     });
 
-    it("should handle a request - data with service name", async () => {
-      await stripped.handleRequest(testRequest);
+    it("should handle a request - data with service name", () => {
+      stripped.handleRequest(testRequest);
       expect(mockConfig.KafkaProducer.createTopic).toHaveBeenCalledTimes(1);
     });
 
-    it("should handle a request - data with generic service name", async () => {
+    it("should handle a request - data with generic service name", () => {
       sampleConfig = Object.assign({}, testConfig);
-      await stripped.handleRequest(testRequest);
+      stripped.handleRequest(testRequest);
       expect(mockConfig.KafkaProducer.createTopic).toHaveBeenCalledTimes(1);
     });
 
-    it("should handle a request - data with another service name", async () => {
+    it("should handle a request - data with another service name", () => {
       sampleConfig = { anotherService: {} };
-      await stripped.handleRequest(testRequest);
+      stripped.handleRequest(testRequest);
       expect(mockConfig.KafkaProducer.createTopic).toHaveBeenCalledTimes(1);
-    });
-
-    it("should not handle a request - without data", async () => {
-      sampleConfig = undefined;
-      await stripped.handleRequest(testRequest);
-      expect(mockConfig.KafkaProducer.createTopic).not.toHaveBeenCalled();
     });
   });
 });
