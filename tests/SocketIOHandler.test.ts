@@ -6,6 +6,7 @@ import http = require("http");
 import { Callback } from "redis";
 import { SocketIOHandler } from "../src/SocketIOHandler";
 import { logger } from "@dojot/dojot-module-logger";
+import lodash from "lodash";
 
 /**
  * Variables
@@ -74,6 +75,7 @@ const mockConfig = {
 /**
  * Mocks
  */
+jest.genMockFromModule("lodash");
 jest.genMockFromModule("redis");
 
 jest.mock("socket.io", () => {
@@ -343,61 +345,91 @@ describe("SocketIOHandler", () => {
 
   describe("registerCallback", () => {
     it("should register a callback for a subject that is not already registered", () => {
-      stripped.registeredCallbacks.get = jest.fn(() => { return undefined });
-      stripped.registeredCallbacks.set = jest.fn();
-      mockConfig.Messenger.on = jest.fn(() => { return "sample-callback-id" });
+      mockConfig.Messenger.on = jest.fn(() => { return testCallbackId });
+      stripped.registerSubjectForToken = jest.fn();
 
       stripped.registerCallback(testSubject, testEvent, jest.fn(), testToken);
 
-      expect(stripped.registeredCallbacks.get).toHaveBeenCalledWith(testSubject);
-      expect(stripped.registeredCallbacks.get).toReturnWith(undefined);
+      expect(stripped.registeredSubjects).toEqual({
+        [testSubject]: {
+          event: testEvent,
+          callbackId: testCallbackId,
+          sessions: 1,
+        }
+      });
       expect(mockConfig.Messenger.on).toHaveBeenCalledWith(testSubject, testEvent, expect.any(Function));
-      expect(mockConfig.Messenger.on).toReturnWith("sample-callback-id");
-      expect(stripped.registeredCallbacks.set).toHaveBeenCalledWith(
-        testSubject,
-        { event: testEvent, callbackId: "sample-callback-id", token: testToken });
+      expect(mockConfig.Messenger.on).toReturnWith(testCallbackId);
     });
 
     it("should not register a callback for a subject that is already registered", () => {
-      stripped.registeredCallbacks.get = jest.fn(() => { return {} });
-      stripped.registeredCallbacks.set = jest.fn();
-      logger.debug = jest.fn();
+      stripped.registeredSubjects = {
+        [testSubject]: {
+          event: testEvent,
+          callbackId: testCallbackId,
+          sessions: 1
+        }
+      };
+      stripped.registerSubjectForToken = jest.fn();
 
       stripped.registerCallback(testSubject, testEvent, jest.fn(), testToken);
 
-      expect(stripped.registeredCallbacks.get).toHaveBeenCalledWith(testSubject);
-      expect(stripped.registeredCallbacks.get).toReturnWith(expect.anything());
+      expect(stripped.registeredSubjects).toEqual({
+        [testSubject]: {
+          event: testEvent,
+          callbackId: testCallbackId,
+          sessions: 2
+        }
+      });
       expect(mockConfig.Messenger.on).not.toHaveBeenCalled();
-      expect(stripped.registeredCallbacks.set).not.toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalled();
+    });
+  });
+
+  describe("registerSubjectForToken", () => {
+    it("should register one subject", () => {
+      mockConfig.Messenger.on = jest.fn();
+
+      stripped.registerSubjectForToken(testSubject, testToken);
+
+      expect(stripped.tokenSubjects).toEqual({ [testToken]: [testSubject] })
+    });
+
+    it("should register a second subject", () => {
+      mockConfig.Messenger.on = jest.fn();
+      stripped.tokenSubjects = {[testToken]: [testSubject]}
+
+      stripped.registerSubjectForToken("another-subject", testToken);
+
+      expect(stripped.tokenSubjects).toEqual({ [testToken]: [testSubject, "another-subject"] })
     });
   });
 
   describe("removeCallbacks", () => {
     it("should remove the registered callback", () => {
-      stripped.registeredCallbacks.forEach = jest.fn();
-      stripped.registeredCallbacks.delete = jest.fn();
+      mockConfig.Messenger.unregisterCallback = jest.fn();
+      const pickBySpy = jest.spyOn(lodash, "pickBy");
+      const omitSpy = jest.spyOn(lodash, "omit");
+      const forEachSpy = jest.spyOn(lodash, "forEach");
+
+      stripped.registeredSubjects = {
+        [testSubject]: {
+            event: testEvent,
+            callbackId: testCallbackId,
+            sessions: 1
+          }
+      }
+      stripped.tokenSubjects = {[testToken]: [testSubject]}
+      // We need to store in a variable because the object will disappear within removeCallbacks()
 
       stripped.removeCallbacks(testToken);
 
-      expect(stripped.registeredCallbacks.forEach).toHaveBeenCalled();
-      const [ callback ] = stripped.registeredCallbacks.forEach.mock.calls[0];
-      callback({ event: testEvent, callbackId: testCallbackId, token: testToken }, testSubject);
-      expect(mockConfig.Messenger.unregisterCallback).toHaveBeenCalledWith(testSubject, testEvent, testCallbackId);
-      expect(stripped.registeredCallbacks.delete).toHaveBeenCalledWith(testSubject);
-    });
+      expect(stripped.tokenSubjects[testToken]).toBeUndefined();
+      expect(stripped.tokenSubjects).toEqual({});
+      expect(pickBySpy).toHaveBeenCalled();
+      expect(forEachSpy).toHaveBeenCalled();
+      expect(omitSpy).toHaveBeenCalled();
+      expect(stripped.tokenSubjects).toEqual({});
+      expect(stripped.registeredSubjects).toEqual({});
 
-    it("should not remove the registered callback that does not have a matching token", () => {
-      stripped.registeredCallbacks.forEach = jest.fn();
-      stripped.registeredCallbacks.delete = jest.fn();
-
-      stripped.removeCallbacks(testToken);
-
-      expect(stripped.registeredCallbacks.forEach).toHaveBeenCalled();
-      const [ callback ] = stripped.registeredCallbacks.forEach.mock.calls[0];
-      callback({ event: testEvent, callbackId: testCallbackId, token: testToken + "-1" }, testSubject);
-      expect(mockConfig.Messenger.unregisterCallback).not.toHaveBeenCalled();
-      expect(stripped.registeredCallbacks.delete).not.toHaveBeenCalled();
     });
   });
 
