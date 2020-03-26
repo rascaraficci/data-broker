@@ -210,16 +210,31 @@ class SocketIOHandler {
    * Stops Kafka messages consumption by removing the callbacks associated with it.
    */
   private removeCallbacks(token: string): void {
-    // logger.error(`eventCallbacks: ${util.inspect((this.messenger as any).eventCallbacks)}`, TAG);
-
-    // Unregistering the callbacks for this token
-    this.registeredCallbacks.forEach((register, subject) => {
-      if (register.token === token) {
-        this.messenger.unregisterCallback(subject, register.event, register.callbackId);
-        this.registeredCallbacks.delete(subject);
-        logger.debug(`Removed callback for subject ${subject}`, TAG);
-      }
+    // Decrementing the sessions for each subject this connection (token) has
+    this.tokenSubjects[token].forEach((subject) => {
+      this.registeredSubjects = Object.assign(
+        {},
+        this.registeredSubjects,
+        {
+          [subject]: {
+            event: this.registeredSubjects[subject].event,
+            callbackId: this.registeredSubjects[subject].callbackId,
+            sessions: this.registeredSubjects[subject].sessions - 1
+          }
+        }
+      )
     });
+    // Removing `token` property from tokenSubjects and allocating the rest of the object to newTokenSubjects
+    const { [token]: _, ...newTokenSubjects } = this.tokenSubjects;
+    this.tokenSubjects = newTokenSubjects;
+
+    // Unregistering the callbacks
+    let toRemove = lodash.pickBy(this.registeredSubjects, (registeredSubject) => registeredSubject.sessions <= 0);
+    lodash.forEach(toRemove, (registeredSubject, subject) => {
+      this.messenger.unregisterCallback(subject, registeredSubject.event, registeredSubject.callbackId);
+    });
+    // Removing the subjects that had unregistered callbacks
+    this.registeredSubjects = lodash.omit(this.registeredSubjects, Object.keys(toRemove));
   }
 
   /**
