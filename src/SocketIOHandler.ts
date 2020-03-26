@@ -173,11 +173,36 @@ class SocketIOHandler {
    * @param token the token returned by the Socket
    */
   private registerCallback(subject: string, event: string, cb: (ten: string, data: any) => void, token: string): void {
-    if (this.registeredCallbacks.get(subject) === undefined) {
+    this.registerSubjectForToken(subject, token);
+
+    if (this.registeredSubjects[subject] === undefined) {
       const callbackId = this.messenger.on(subject, event, cb);
-      this.registeredCallbacks.set(subject, { event, callbackId, token });
+      this.registeredSubjects = Object.assign({}, this.registeredSubjects, { [subject]: { event, callbackId, sessions: 1 }})
     } else {
-      logger.debug(`Callback for subject ${subject} already present, ignoring creation`, TAG);
+      this.registeredSubjects = Object.assign(
+        {},
+        this.registeredSubjects,
+        {
+          [subject]: {
+            event: this.registeredSubjects[subject].event,
+            callbackId: this.registeredSubjects[subject].callbackId,
+            sessions: this.registeredSubjects[subject].sessions + 1
+          }
+        }
+      )
+    }
+  }
+
+  /**
+   * Register a subject in a token
+   * @param subject subject to be registered
+   * @param token token (connection) that requested the subjects' register
+   */
+  private registerSubjectForToken(subject: string, token: string): void {
+    if (this.tokenSubjects[token] === undefined) {
+      this.tokenSubjects = Object.assign({}, this.tokenSubjects, { [token]: new Array<string>(subject) });
+    } else {
+      this.tokenSubjects = Object.assign({}, this.tokenSubjects, { [token]: this.tokenSubjects[token].concat(subject) });
     }
   }
 
