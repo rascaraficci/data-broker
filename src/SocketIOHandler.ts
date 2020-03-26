@@ -229,7 +229,7 @@ class SocketIOHandler {
     this.tokenSubjects = newTokenSubjects;
 
     // Unregistering the callbacks
-    let toRemove = lodash.pickBy(this.registeredSubjects, (registeredSubject) => registeredSubject.sessions <= 0);
+    const toRemove = lodash.pickBy(this.registeredSubjects, (registeredSubject) => registeredSubject.sessions <= 0);
     lodash.forEach(toRemove, (registeredSubject, subject) => {
       this.messenger.unregisterCallback(subject, registeredSubject.event, registeredSubject.callbackId);
     });
