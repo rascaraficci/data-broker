@@ -7,6 +7,7 @@ import { logger } from "@dojot/dojot-module-logger";
 import http = require("http");
 import sio from "socket.io";
 import uuid = require("uuid/v4");
+import lodash from "lodash";
 
 import { FilterManager } from "./FilterManager";
 import { RedisManager } from "./redisManager";
@@ -18,10 +19,16 @@ function getKey(token: string): string {
   return "si:" + token;
 }
 
-interface IRegisteredCallback {
-  event: string;
-  callbackId: string;
-  token: string;
+interface IRegisteredSubjects {
+  readonly [subject: string]: {
+    readonly event: string;
+    readonly callbackId: string;
+    readonly sessions: number;
+  };
+}
+
+interface ITokenSubjects {
+  readonly [token: string]: ReadonlyArray<string>;
 }
 
 /**
@@ -32,7 +39,9 @@ class SocketIOHandler {
   private messenger: Messenger;
   private fManager: FilterManager;
   // Maintains a map of registered subjects with the data needed to unregister callbacks
-  private registeredCallbacks: Map<string, IRegisteredCallback>;
+  private registeredSubjects: IRegisteredSubjects;
+  // Stores the subjects that connection needs
+  private tokenSubjects: ITokenSubjects;
 
   /**
    * Constructor.
@@ -41,7 +50,8 @@ class SocketIOHandler {
   constructor(httpServer: http.Server, messenger: Messenger) {
     this.messenger = messenger;
     this.fManager = new FilterManager();
-    this.registeredCallbacks = new Map<string, IRegisteredCallback>();
+    this.registeredSubjects = {};
+    this.tokenSubjects = {};
 
     logger.debug("Creating new SocketIO handler...", TAG);
 
