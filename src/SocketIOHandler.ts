@@ -142,14 +142,10 @@ class SocketIOHandler {
 
     logger.debug("Creating new topic/retrieving current for tenant", TAG);
     const topicManager = TopicManagerBuilder.get(tenant);
-    topicManager.getCreateTopic(
-      "device-data",
-      (error?: any, topic?: string) => {
+    topicManager.createTopic("device-data", (error?: any, topic?: string) => {
         if (error || !topic) {
-          logger.error(
-            `Failed to find appropriate topic for tenant: ${
-            error ? error : "Unknown topic"
-            }`, TAG);
+          logger.error(`Failed to find appropriate topic for tenant: \
+            ${error ? error : "Unknown topic"}`, TAG);
           return;
         }
       });
@@ -251,10 +247,7 @@ class SocketIOHandler {
     try {
       data = JSON.parse(message);
     } catch (err) {
-      if (err instanceof TypeError) {
-        logger.debug("... message payload was not successfully parsed.", TAG);
-        logger.error(`Received data is not a valid event: ${message}`, TAG);
-      } else if (err instanceof SyntaxError) {
+      if (err instanceof SyntaxError) {
         logger.debug("... message payload was not successfully parsed.", TAG);
         logger.error(`Failed to parse event as JSON: ${message}`, TAG);
       }
@@ -294,10 +287,7 @@ class SocketIOHandler {
     try {
       data = JSON.parse(message);
     } catch (err) {
-      if (err instanceof TypeError) {
-        logger.debug("... actuator message payload was not successfully parsed.", TAG);
-        logger.error(`Received data is not a valid event: ${message}`, TAG);
-      } else if (err instanceof SyntaxError) {
+      if (err instanceof SyntaxError) {
         logger.debug("... actuator message payload was not successfully parsed.", TAG);
         logger.error(`Failed to parse event as JSON: ${message}`, TAG);
       }

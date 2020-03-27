@@ -54,7 +54,7 @@ const mockConfig = {
   },
 
   TopicManager: {
-    getCreateTopic: jest.fn(),
+    createTopic: jest.fn(),
   },
 
   socketSample: {
