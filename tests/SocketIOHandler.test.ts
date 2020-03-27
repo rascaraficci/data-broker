@@ -309,7 +309,7 @@ describe("SocketIOHandler", () => {
     });
 
     it("should return a correct token", () => {
-      expect(mockConfig.TopicManager.getCreateTopic).toBeCalledTimes(1);
+      expect(mockConfig.TopicManager.createTopic).toBeCalledTimes(1);
 
       // Retrieve redis calls
       expect(mockConfig.ClientWrapper.client.setex).toBeCalledTimes(1);
@@ -321,9 +321,9 @@ describe("SocketIOHandler", () => {
       expect(token).toEqual(testToken);
     });
 
-    it("should call getCreateTopic callback successfuly", (done) => {
-      // Retrieve getCreateTopic call
-      const [subject, callback] = mockConfig.TopicManager.getCreateTopic.mock.calls[0];
+    it("should call createTopic callback successfuly", (done) => {
+      // Retrieve createTopic call
+      const [subject, callback] = mockConfig.TopicManager.createTopic.mock.calls[0];
       expect(subject).toEqual(testSubject);
 
       callback(undefined, testTopic);
@@ -333,9 +333,9 @@ describe("SocketIOHandler", () => {
       done();
     });
 
-    it("should call getCreateTopic callback with error", () => {
-      // Retrieve getCreateTopic call
-      const [_subject, callback] = mockConfig.TopicManager.getCreateTopic.mock.calls[0];
+    it("should call createTopic callback with error", () => {
+      // Retrieve createTopic call
+      const [_subject, callback] = mockConfig.TopicManager.createTopic.mock.calls[0];
 
       callback(testError);
 
