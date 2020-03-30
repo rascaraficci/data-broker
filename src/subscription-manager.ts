@@ -1,24 +1,28 @@
 import { Messenger } from "@dojot/dojot-module";
 import { getHTTPRouter as getLoggerRouter, logger } from "@dojot/dojot-module-logger";
+
 import bodyParser = require("body-parser");
 import express = require("express");
 import http = require("http");
 import morgan = require("morgan");
 import util = require("util");
+
 import { authEnforce, authParse, IAuthRequest } from "./api/authMiddleware";
 import config = require("./config");
 import { AgentHealthChecker } from "./Healthcheck";
 import { RedisManager } from "./redisManager";
-import { SocketIOSingleton } from "./socketIo";
+import { SocketIOHandler } from "./SocketIOHandler";
 import { TopicManagerBuilder } from "./TopicBuilder";
 
 const TAG = { filename: "SubscriptionManager" };
 
 class DataBroker {
   private app: express.Application;
+  private sioHandler: SocketIOHandler | undefined;
 
   constructor(app: express.Application) {
     this.app = app;
+    this.sioHandler = undefined;
   }
 
   public start() {
@@ -34,21 +38,14 @@ class DataBroker {
 
     const httpServer = http.createServer(this.app);
 
+    // Kafka Messenger
     logger.debug("Initializing Kafka messenger...", TAG);
-    this.initializeMessenger()
+    this.initializeMessenger("data-broker")
       .then((messenger: Messenger) => {
         logger.debug("... Kafka messenger successfully initialized.", TAG);
-        logger.debug("Initializing Healthcheck...", TAG);
-        const redis = RedisManager.getClient().client;
-        const healthChecker = new AgentHealthChecker(messenger, redis);
-        healthChecker.init();
-        this.app.use(healthChecker.router);
-        logger.debug("... healthcheck was successfully initialized.", TAG);
-        // make sure singleton is instantiated
-        logger.debug("Registering socket.io endpoints...", TAG);
-        SocketIOSingleton.getInstance(httpServer, messenger);
+        this.initializeHealthChecker(messenger);
+        this.sioHandler = new SocketIOHandler(httpServer, messenger);
         this.registerSocketIOEndpoints();
-        logger.debug("... socket.io endpoints were successfully registered.", TAG);
       })
       .catch((error: any) => {
         logger.error(`... Kafka messenger initialization failed. Error: ${error}`, TAG);
@@ -56,9 +53,7 @@ class DataBroker {
       });
     logger.debug("... Kafka messenger initialization requested.", TAG);
 
-    logger.debug("Registering common endpoints...", TAG);
     this.registerTopicEndpoints();
-    logger.debug("... common endpoints were registered.", TAG);
 
     logger.debug("Starting HTTP server...", TAG);
     httpServer.listen(config.service.port, () => {
@@ -67,13 +62,24 @@ class DataBroker {
     logger.debug("... HTTP server startup requested.", TAG);
   }
 
-  protected async initializeMessenger() {
-    const messenger = new Messenger("data-broker-socketio");
+  private async initializeMessenger(name: string) {
+    const messenger = new Messenger(name);
     await messenger.init();
     return messenger;
   }
 
-  protected registerTopicEndpoints() {
+  private initializeHealthChecker(messenger: Messenger) {
+    logger.debug("Initializing Healthcheck...", TAG);
+    const redis = RedisManager.getClient().client;
+    const healthChecker = new AgentHealthChecker(messenger, redis);
+    healthChecker.init();
+    this.app.use(healthChecker.router);
+    logger.debug("... healthcheck was successfully initialized.", TAG);
+  }
+
+  private registerTopicEndpoints() {
+    logger.debug("Registering common endpoints...", TAG);
+
     /*
      * Topic registry endpoints
      */
@@ -99,22 +105,30 @@ class DataBroker {
       }
     });
   }
-  protected registerSocketIOEndpoints() {
+
+  private registerSocketIOEndpoints() {
+    logger.debug("Registering socket.io endpoints...", TAG);
 
     /**
      * SocketIO endpoint
      */
     this.app.get("/socketio", (req: IAuthRequest, response: express.Response) => {
       logger.debug("Received a request for a new socketIO connection in /socketio.", TAG);
-      if (req.service === undefined) {
+      if (req.service === undefined ) {
         logger.error("Service is not defined in SocketIO connection request headers.", TAG);
-        response.status(401);
-        response.send({ error: "Missing service in GET request header" });
+        response.status(401).send({ error: "Missing service in GET request header" });
       } else {
-        const token = SocketIOSingleton.getInstance().getToken(req.service);
+        if (this.sioHandler) {
+        const token = this.sioHandler.getToken(req.service);
         response.status(200).send({ token });
+        } else {
+        logger.error("SocketIO Handler is not initialized.", TAG);
+        response.status(500).send({ error: "SocketIO handler is not initialized" });
+        }
       }
     });
+
+    logger.debug("... socket.io endpoints were successfully registered.", TAG);
   }
 }
 

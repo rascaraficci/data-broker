@@ -3,8 +3,12 @@
 
 import { Messenger } from "@dojot/dojot-module";
 import { logger } from "@dojot/dojot-module-logger";
-import sio = require("socket.io");
+
+import http = require("http");
+import sio from "socket.io";
 import uuid = require("uuid/v4");
+import lodash from "lodash";
+
 import { FilterManager } from "./FilterManager";
 import { RedisManager } from "./redisManager";
 import { TopicManagerBuilder } from "./TopicBuilder";
@@ -15,6 +19,18 @@ function getKey(token: string): string {
   return "si:" + token;
 }
 
+interface IRegisteredSubjects {
+  readonly [subject: string]: {
+    readonly event: string;
+    readonly callbackId: string;
+    readonly sessions: number;
+  };
+}
+
+interface ITokenSubjects {
+  readonly [token: string]: ReadonlyArray<string>;
+}
+
 /**
  * Class used to handle SocketIO operations
  */
@@ -22,30 +38,46 @@ class SocketIOHandler {
   private ioServer: SocketIO.Server;
   private messenger: Messenger;
   private fManager: FilterManager;
+  // Maintains a map of registered subjects with the data needed to unregister callbacks
+  private registeredSubjects: IRegisteredSubjects;
+  // Stores the subjects that connection needs
+  private tokenSubjects: ITokenSubjects;
 
   /**
    * Constructor.
    * @param httpServer HTTP server as a basis to offer SocketIO connection
    */
-  constructor(httpServer: any, messenger: Messenger) {
+  constructor(httpServer: http.Server, messenger: Messenger) {
+    this.messenger = messenger;
+    this.fManager = new FilterManager();
+    this.registeredSubjects = {};
+    this.tokenSubjects = {};
+
     logger.debug("Creating new SocketIO handler...", TAG);
 
     logger.debug("Creating sio server...", TAG);
     this.ioServer = sio(httpServer);
     logger.debug("... sio server was created.", TAG);
 
+    logger.debug("Configuring sio server...", TAG);
     this.ioServer.use(this.checkSocket);
+    logger.debug("... sio server was configured.", TAG);
 
     logger.debug("Registering SocketIO server callbacks...", TAG);
-
-    this.messenger = messenger;
-    this.messenger.on("device-data", "message", this.handleMessage.bind(this));
-    this.messenger.on("dojot.device-manager.device", "message", this.handleMessageActuator.bind(this));
-
-    this.fManager = new FilterManager();
-
     this.ioServer.on("connection", (socket: sio.Socket) => {
       logger.debug("Got new SocketIO connection", TAG);
+
+      logger.debug("Registering Messenger callbacks", TAG);
+      const token = socket.handshake.query.token;
+      this.registerCallback("device-data", "message", this.handleMessage.bind(this), token);
+      this.registerCallback("dojot.device-manager.device", "message", this.handleMessageActuator.bind(this), token);
+
+      logger.debug("Registering 'disconnect' callback", TAG);
+      socket.on("disconnect", () => {
+        logger.debug("Socket disconnected. Will unregister callbacks", TAG);
+        this.removeCallbacks(token);
+      });
+
       const redis = RedisManager.getClient();
       redis.runScript(
         __dirname + "/lua/setDel.lua",
@@ -85,23 +117,19 @@ class SocketIOHandler {
 
   public registerSocketIoNotification(socket: sio.Socket, tenant: string) {
     logger.debug("Received connection for dojot.notifications", TAG);
-    this.messenger.on("dojot.notifications", "message", (ten: string, msg: any) => {
+    this.registerCallback("dojot.notifications", "message", (ten: string, msg: any) => {
       logger.debug("Received dojot notification.", TAG);
       if (ten === tenant) {
         if (this.fManager.checkFilter(msg, socket.id)) {
           socket.emit("notification", msg);
         }
       }
-    }, socket.id);
+    }, socket.handshake.query.token);
 
     logger.debug("Will register new filter callback", TAG);
     socket.on("filter", (filter) => {
       logger.debug("Received new filter", TAG);
       this.fManager.update(JSON.parse(filter), socket.id);
-    });
-    socket.on("disconnect", () => {
-      logger.debug("Socket disconnected. Will unregister callback", TAG);
-      this.messenger.unregisterCallback("dojot.notifications", "message", socket.id);
     });
   }
 
@@ -131,6 +159,78 @@ class SocketIOHandler {
 
     logger.debug(`... token for tenant ${tenant} was created: ${token}.`, TAG);
     return token;
+  }
+
+  /**
+   * Register a callback in Kafka Messenger events.
+   * @param subject Kafka subject
+   * @param event
+   * @param callback callback to be registered for Kafka Messenger
+   * @param token the token returned by the Socket
+   */
+  private registerCallback(subject: string, event: string, cb: (ten: string, data: any) => void, token: string): void {
+    this.registerSubjectForToken(subject, token);
+
+    if (this.registeredSubjects[subject] === undefined) {
+      const callbackId = this.messenger.on(subject, event, cb);
+      this.registeredSubjects = Object.assign({}, this.registeredSubjects, { [subject]: { event, callbackId, sessions: 1 }})
+    } else {
+      this.registeredSubjects = Object.assign(
+        {},
+        this.registeredSubjects,
+        {
+          [subject]: {
+            event: this.registeredSubjects[subject].event,
+            callbackId: this.registeredSubjects[subject].callbackId,
+            sessions: this.registeredSubjects[subject].sessions + 1
+          }
+        }
+      )
+    }
+  }
+
+  /**
+   * Register a subject in a token
+   * @param subject subject to be registered
+   * @param token token (connection) that requested the subjects' register
+   */
+  private registerSubjectForToken(subject: string, token: string): void {
+    if (this.tokenSubjects[token] === undefined) {
+      this.tokenSubjects = Object.assign({}, this.tokenSubjects, { [token]: new Array<string>(subject) });
+    } else {
+      this.tokenSubjects = Object.assign({}, this.tokenSubjects, { [token]: this.tokenSubjects[token].concat(subject) });
+    }
+  }
+
+  /**
+   * Stops Kafka messages consumption by removing the callbacks associated with it.
+   */
+  private removeCallbacks(token: string): void {
+    // Decrementing the sessions for each subject this connection (token) has
+    this.tokenSubjects[token].forEach((subject) => {
+      this.registeredSubjects = Object.assign(
+        {},
+        this.registeredSubjects,
+        {
+          [subject]: {
+            event: this.registeredSubjects[subject].event,
+            callbackId: this.registeredSubjects[subject].callbackId,
+            sessions: this.registeredSubjects[subject].sessions - 1
+          }
+        }
+      )
+    });
+    // Removing `token` property from tokenSubjects and allocating the rest of the object to newTokenSubjects
+    const { [token]: _, ...newTokenSubjects } = this.tokenSubjects;
+    this.tokenSubjects = newTokenSubjects;
+
+    // Unregistering the callbacks
+    const toRemove = lodash.pickBy(this.registeredSubjects, (registeredSubject) => registeredSubject.sessions <= 0);
+    lodash.forEach(toRemove, (registeredSubject, subject) => {
+      this.messenger.unregisterCallback(subject, registeredSubject.event, registeredSubject.callbackId);
+    });
+    // Removing the subjects that had unregistered callbacks
+    this.registeredSubjects = lodash.omit(this.registeredSubjects, Object.keys(toRemove));
   }
 
   /**
